@@ -1,0 +1,52 @@
+services:
+  db:
+    image: mariadb:11
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: flowboard
+      MYSQL_USER: flowboard
+      MYSQL_PASSWORD: flowboard
+    volumes:
+      - mariadb_data:/var/lib/mysql
+    ports:
+      - "3306:3306"
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 5s
+      timeout: 5s
+      retries: 15
+      start_period: 30s
+
+  api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    ports:
+      - "3001:3001"
+    environment:
+      DATABASE_URL: mysql://flowboard:flowboard@db:3306/flowboard
+      JWT_SECRET: change-me-in-production-use-long-random-string
+      ADMIN_BOOTSTRAP_USERNAME: admin
+      ADMIN_BOOTSTRAP_PASSWORD: admin123
+      UPLOAD_DIR: /data/uploads
+      CORS_ORIGIN: http://localhost,http://localhost:80,http://127.0.0.1
+      PORT: 3001
+      NODE_ENV: production
+    volumes:
+      - uploads_data:/data/uploads
+    depends_on:
+      db:
+        condition: service_healthy
+
+  web:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+    ports:
+      - "80:80"
+    depends_on:
+      - api
+
+volumes:
+  mariadb_data:
+  uploads_data:

@@ -1,0 +1,5 @@
+{
+  "name": "flowboard",
+  "private": true,
+  "workspaces": ["apps/*"]
+}
