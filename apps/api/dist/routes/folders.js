@@ -1,8 +1,38 @@
 import { eq, inArray } from "drizzle-orm";
+import { promises as fs } from "node:fs";
+import path from "node:path";
 import { db, pool } from "../db/index.js";
-import { folders, screens } from "../db/schema.js";
+import { folders, screenItems, screens } from "../db/schema.js";
 import { canAccessFolder, getVisibleFolderIds, } from "../lib/access.js";
 import { authPreHandler } from "../plugins/require-auth.js";
+function uploadDir() {
+    const d = process.env.UPLOAD_DIR ?? "./data/uploads";
+    return path.resolve(d);
+}
+function collectDescendantFolderIds(all, rootId) {
+    const children = new Map();
+    for (const f of all) {
+        const p = f.parentId ?? null;
+        if (p == null)
+            continue;
+        const list = children.get(p) ?? [];
+        list.push(f.id);
+        children.set(p, list);
+    }
+    const order = [];
+    const q = [rootId];
+    const seen = new Set();
+    while (q.length) {
+        const id = q.shift();
+        if (seen.has(id))
+            continue;
+        seen.add(id);
+        order.push(id);
+        for (const c of children.get(id) ?? [])
+            q.push(c);
+    }
+    return { ids: [...seen], deleteOrder: order.reverse() };
+}
 function buildTree(rows, parentId) {
     return rows
         .filter((r) => (r.parentId ?? null) === parentId)
@@ -64,7 +94,38 @@ export async function registerFolderRoutes(app) {
         const id = Number(request.params.id);
         if (!Number.isFinite(id))
             return reply.status(400).send({ error: "invalid id" });
-        await db.delete(folders).where(eq(folders.id, id));
+        const all = await db.select({ id: folders.id, parentId: folders.parentId }).from(folders);
+        if (!all.some((f) => f.id === id))
+            return reply.status(404).send({ error: "not found" });
+        const { ids: folderIds, deleteOrder } = collectDescendantFolderIds(all, id);
+        const screenRows = folderIds.length === 0
+            ? []
+            : await db
+                .select({ id: screens.id })
+                .from(screens)
+                .where(inArray(screens.folderId, folderIds));
+        const screenIds = screenRows.map((s) => s.id);
+        if (screenIds.length > 0) {
+            const items = await db
+                .select({ storageKey: screenItems.storageKey })
+                .from(screenItems)
+                .where(inArray(screenItems.screenId, screenIds));
+            const root = uploadDir();
+            for (const it of items) {
+                const fp = path.join(root, it.storageKey);
+                try {
+                    await fs.unlink(fp);
+                }
+                catch {
+                    /* ignore */
+                }
+            }
+            await db.delete(screenItems).where(inArray(screenItems.screenId, screenIds));
+            await db.delete(screens).where(inArray(screens.id, screenIds));
+        }
+        for (const fid of deleteOrder) {
+            await db.delete(folders).where(eq(folders.id, fid));
+        }
         return { ok: true };
     });
     app.patch("/folders/:id", { preHandler: authPreHandler }, async (request, reply) => {
