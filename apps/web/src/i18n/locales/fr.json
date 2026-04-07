@@ -1,0 +1,88 @@
+{
+  "app": { "name": "Flowboard" },
+  "layout": {
+    "searchPlaceholder": "Rechercher dans le menu…",
+    "betaCta": "Version MVP : pilotez vos écrans dynamiques simplement et rapidement.",
+    "openMenu": "Ouvrir le menu"
+  },
+  "nav": {
+    "section": "Navigation",
+    "dashboard": "Tableau de bord",
+    "screens": "Écran",
+    "accounts": "Compte",
+    "settings": "Paramètres",
+    "help": "Aide"
+  },
+  "login": {
+    "welcome": "Accédez à votre espace pour gérer les diaporamas.",
+    "title": "Connexion",
+    "username": "Nom d'utilisateur",
+    "password": "Mot de passe",
+    "submit": "Se connecter",
+    "error": "Identifiants invalides",
+    "showPassword": "Afficher le mot de passe",
+    "hidePassword": "Masquer le mot de passe"
+  },
+  "dashboard": {
+    "subtitle": "Vue d’ensemble — bientôt des modules personnalisables.",
+    "title": "Tableau de bord",
+    "placeholder": "Des modules d’information seront ajoutés ici."
+  },
+  "screens": {
+    "subtitle": "Organisez vos dossiers, écrans et médias du diaporama.",
+    "title": "Écrans",
+    "folders": "Dossiers",
+    "addFolder": "Nouveau dossier",
+    "addSubfolder": "Sous-dossier",
+    "screensInFolder": "Écrans dans ce dossier",
+    "addScreen": "Nouvel écran",
+    "screenName": "Nom de l’écran",
+    "copyUrl": "Copier l’URL du diaporama",
+    "copied": "URL copiée",
+    "manageMedia": "Gérer les médias",
+    "duration": "Durée (ms)",
+    "upload": "Ajouter un média",
+    "deleteItem": "Supprimer",
+    "noFolder": "Sélectionnez un dossier",
+    "noScreens": "Aucun écran",
+    "dialogTitle": "Médias de l’écran",
+    "folderName": "Nom du dossier",
+    "doubleClickHint": "Double-cliquez sur un écran pour gérer les médias.",
+    "emptyFolder": "Ce dossier est vide",
+    "breadcrumbHome": "Écrans",
+    "rootEmpty": "Créez un premier dossier pour commencer."
+  },
+  "accounts": {
+    "edit": "Modifier",
+    "subtitle": "Gérez les comptes et les droits d’accès aux dossiers et écrans.",
+    "title": "Comptes",
+    "add": "Créer un compte",
+    "username": "Nom de compte",
+    "password": "Mot de passe",
+    "role": "Type de compte",
+    "admin": "Administrateur",
+    "user": "Utilisateur",
+    "access": "Accès dossiers et écrans",
+    "save": "Enregistrer",
+    "delete": "Supprimer",
+    "created": "Compte créé"
+  },
+  "settings": {
+    "subtitle": "Langue, thème et session.",
+    "title": "Paramètres",
+    "language": "Langue",
+    "theme": "Thème",
+    "themeLight": "Clair",
+    "themeDark": "Sombre",
+    "themeSystem": "Par défaut (système)",
+    "connectedAs": "Connecté en tant que",
+    "role": "Rôle",
+    "logout": "Se déconnecter"
+  },
+  "help": {
+    "subtitle": "Documentation et tutoriels.",
+    "title": "Aide",
+    "placeholder": "Un tutoriel interactif sera disponible ici."
+  },
+  "common": { "loading": "Chargement…", "cancel": "Annuler", "close": "Fermer", "delete": "Supprimer" }
+}

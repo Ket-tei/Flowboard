@@ -1,0 +1,2 @@
+# Lien workspace npm (junction vers apps/web) — ne pas versionner en double
+node_modules/web

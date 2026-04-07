@@ -1,0 +1,88 @@
+{
+  "app": { "name": "Flowboard" },
+  "layout": {
+    "searchPlaceholder": "Search menu…",
+    "betaCta": "MVP: control your dynamic screens simply and quickly.",
+    "openMenu": "Open menu"
+  },
+  "nav": {
+    "section": "Navigation",
+    "dashboard": "Dashboard",
+    "screens": "Screens",
+    "accounts": "Accounts",
+    "settings": "Settings",
+    "help": "Help"
+  },
+  "login": {
+    "welcome": "Sign in to manage your slideshows.",
+    "title": "Sign in",
+    "username": "Username",
+    "password": "Password",
+    "submit": "Sign in",
+    "error": "Invalid credentials",
+    "showPassword": "Show password",
+    "hidePassword": "Hide password"
+  },
+  "dashboard": {
+    "subtitle": "Overview — customizable modules coming soon.",
+    "title": "Dashboard",
+    "placeholder": "Information modules will be added here."
+  },
+  "screens": {
+    "subtitle": "Organize folders, screens, and slideshow media.",
+    "title": "Screens",
+    "folders": "Folders",
+    "addFolder": "New folder",
+    "addSubfolder": "Subfolder",
+    "screensInFolder": "Screens in this folder",
+    "addScreen": "New screen",
+    "screenName": "Screen name",
+    "copyUrl": "Copy slideshow URL",
+    "copied": "URL copied",
+    "manageMedia": "Manage media",
+    "duration": "Duration (ms)",
+    "upload": "Add media",
+    "deleteItem": "Remove",
+    "noFolder": "Select a folder",
+    "noScreens": "No screens",
+    "dialogTitle": "Screen media",
+    "folderName": "Folder name",
+    "doubleClickHint": "Double-click a screen to manage media.",
+    "emptyFolder": "This folder is empty",
+    "breadcrumbHome": "Screens",
+    "rootEmpty": "Create a first folder to get started."
+  },
+  "accounts": {
+    "edit": "Edit",
+    "subtitle": "Manage accounts and access to folders and screens.",
+    "title": "Accounts",
+    "add": "Create account",
+    "username": "Username",
+    "password": "Password",
+    "role": "Account type",
+    "admin": "Administrator",
+    "user": "User",
+    "access": "Folder and screen access",
+    "save": "Save",
+    "delete": "Delete",
+    "created": "Account created"
+  },
+  "settings": {
+    "subtitle": "Language, theme, and session.",
+    "title": "Settings",
+    "language": "Language",
+    "theme": "Theme",
+    "themeLight": "Light",
+    "themeDark": "Dark",
+    "themeSystem": "Default (system)",
+    "connectedAs": "Signed in as",
+    "role": "Role",
+    "logout": "Sign out"
+  },
+  "help": {
+    "subtitle": "Documentation and tutorials.",
+    "title": "Help",
+    "placeholder": "An interactive tutorial will be available here."
+  },
+  "common": { "loading": "Loading…", "cancel": "Cancel", "close": "Close", "delete": "Delete" }
+}
