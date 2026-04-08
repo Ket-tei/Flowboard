@@ -25,11 +25,11 @@ services:
       - "3001:3001"
     environment:
       DATABASE_URL: mysql://flowboard:flowboard@db:3306/flowboard
-      JWT_SECRET: change-me-in-production-use-long-random-string
+      JWT_SECRET: jdfvuhdfhjvbdsjfghdhfcoisdvjkhgiubndkjbvjdfbdjofhbjdgbjdfnxjgkhriutghoijoizeodpwsvsdnbmdfpgtisdhvusgrfgsrfvgvtfrfwasujvfbvlodlvpdlsfbijfdhgbhdsbvygtfrdarzsxdgdyvfibgdlpnfdjnbdhycgybftrsaqghdcsefdgbremgbpkfdgbudrhg
       ADMIN_BOOTSTRAP_USERNAME: admin
       ADMIN_BOOTSTRAP_PASSWORD: admin123
       UPLOAD_DIR: /data/uploads
-      CORS_ORIGIN: http://localhost,http://localhost:80,http://127.0.0.1
+      CORS_ORIGIN: http://localhost,http://localhost:80,http://127.0.0.1,https://srv1296518.hstgr.cloud
       PORT: 3001
       NODE_ENV: production
     volumes:
