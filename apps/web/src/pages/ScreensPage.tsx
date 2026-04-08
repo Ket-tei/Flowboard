@@ -17,7 +17,7 @@ import {
   horizontalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { Copy, GripVertical, Trash2 } from "lucide-react";
+import { Copy, GripVertical, Monitor, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { apiFetch, apiUrl } from "@/lib/api";
 import { useAuth } from "@/context/auth-context";
@@ -83,10 +83,12 @@ type DragPayload =
 function SortableMediaRow({
   item,
   token,
+  onUpdateDuration,
   onDelete,
 }: {
   item: ScreenItem;
   token: string;
+  onUpdateDuration: (id: number, durationMs: number) => void;
   onDelete: (id: number) => void;
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
@@ -97,6 +99,12 @@ function SortableMediaRow({
     transition,
   };
   const src = apiUrl(`/api/public/screens/${token}/media/${item.id}`);
+  const [durationStr, setDurationStr] = useState<string>(() => String(item.durationMs ?? 5000));
+
+  useEffect(() => {
+    setDurationStr(String(item.durationMs ?? 5000));
+  }, [item.durationMs]);
+
   return (
     <div
       ref={setNodeRef}
@@ -108,7 +116,7 @@ function SortableMediaRow({
     >
       <button
         type="button"
-        className="text-muted-foreground absolute left-2 top-2 z-10 cursor-grab touch-none rounded bg-background/70 p-1 backdrop-blur"
+        className="absolute left-2 top-2 z-10 cursor-grab touch-none rounded bg-white p-1 text-slate-700 shadow-sm"
         {...attributes}
         {...listeners}
       >
@@ -119,11 +127,34 @@ function SortableMediaRow({
       ) : (
         <img src={src} alt="" className="h-40 w-full object-cover" />
       )}
+
+      <div className="absolute bottom-2 left-2 right-2 z-10 flex items-center gap-2 rounded bg-white p-1.5 shadow-sm">
+        <span className="text-[11px] leading-none text-slate-600">ms</span>
+        <Input
+          type="number"
+          inputMode="numeric"
+          className="h-7 border-slate-200 bg-white px-2 text-xs text-slate-900"
+          value={durationStr}
+          min={0}
+          step={100}
+          onClick={(e) => e.stopPropagation()}
+          onChange={(e) => setDurationStr(e.target.value)}
+          onBlur={() => {
+            const n = Number(durationStr);
+            if (!Number.isFinite(n)) {
+              setDurationStr(String(item.durationMs ?? 5000));
+              return;
+            }
+            onUpdateDuration(item.id, Math.max(0, Math.trunc(n)));
+          }}
+        />
+      </div>
+
       <Button
         type="button"
         variant="ghost"
         size="icon"
-        className="absolute right-2 top-2 z-10 bg-background/70 backdrop-blur hover:bg-background"
+        className="absolute right-2 top-2 z-10 bg-white text-slate-700 shadow-sm hover:bg-white"
         onClick={() => onDelete(item.id)}
       >
         <Trash2 className="size-4" />
@@ -138,6 +169,7 @@ export function ScreensPage() {
   const isAdmin = user?.role === "ADMIN";
   const [tree, setTree] = useState<TreeFolder[]>([]);
   const [selectedFolderId, setSelectedFolderId] = useState<number | null>(null);
+  const [selectedScreenId, setSelectedScreenId] = useState<number | null>(null);
   const [expanded, setExpanded] = useState<Set<number>>(() => new Set());
   const [dialogScreen, setDialogScreen] = useState<ScreenRow | null>(null);
   const [dialogItems, setDialogItems] = useState<ScreenItem[]>([]);
@@ -145,10 +177,12 @@ export function ScreensPage() {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const pendingInputRef = useRef<HTMLInputElement | null>(null);
-  const [pendingCreate, setPendingCreate] = useState<{
+  const [createOpen, setCreateOpen] = useState(false);
+  const [createState, setCreateState] = useState<{
     kind: "folder" | "screen";
     parentFolderId: number | null;
     name: string;
+    busy: boolean;
   } | null>(null);
 
   const [confirmOpen, setConfirmOpen] = useState(false);
@@ -192,8 +226,11 @@ export function ScreensPage() {
   }
 
   async function openDialog(s: ScreenRow) {
+    // Ouvre la popup immédiatement, puis charge les médias en arrière-plan.
     setDialogScreen(s);
-    const r = await apiFetch<{ items: ScreenItem[] }>(`/api/screens/${s.id}`);
+    setDialogItems([]);
+    const r = await apiFetch<{ screen: ScreenRow; items: ScreenItem[] }>(`/api/screens/${s.id}`);
+    setDialogScreen(r.screen);
     setDialogItems(r.items.sort((a, b) => a.sortOrder - b.sortOrder || a.id - b.id));
   }
 
@@ -217,14 +254,24 @@ export function ScreensPage() {
       method: "PATCH",
       body: JSON.stringify({ orderedIds: next.map((x) => x.id) }),
     });
-    toast.success("OK");
+    toast.success("Ordre des médias enregistré");
   }
 
   async function deleteItem(id: number) {
     if (!dialogScreen) return;
     await apiFetch(`/api/screens/${dialogScreen.id}/items/${id}`, { method: "DELETE" });
     setDialogItems((prev) => prev.filter((x) => x.id !== id));
-    toast.success("OK");
+    toast.success("Média supprimé");
+  }
+
+  async function updateItemDuration(itemId: number, durationMs: number) {
+    if (!dialogScreen) return;
+    setDialogItems((prev) => prev.map((it) => (it.id === itemId ? { ...it, durationMs } : it)));
+    await apiFetch(`/api/screens/${dialogScreen.id}/items/${itemId}`, {
+      method: "PATCH",
+      body: JSON.stringify({ durationMs }),
+    });
+    toast.success("Durée du média mise à jour");
   }
 
   async function onUploadFile(f: File | null) {
@@ -244,7 +291,7 @@ export function ScreensPage() {
       return;
     }
     await openDialog(dialogScreen);
-    toast.success("OK");
+    toast.success("Média ajouté");
   }
 
   function MediaPlaceholder() {
@@ -273,42 +320,92 @@ export function ScreensPage() {
     return tree[0]?.id ?? null;
   }
 
-  function openInlineCreate(kind: "folder" | "screen", parentFolderId: number | null) {
-    setPendingCreate({ kind, parentFolderId, name: "" });
+  function openCreate(kind: "folder" | "screen", parentFolderId: number | null) {
+    if (!isAdmin) return;
+    let parent = parentFolderId;
+    if (kind === "screen") {
+      parent = pickTargetFolderId(parentFolderId);
+      if (parent == null) {
+        toast.error(t("screens.noFolder"));
+        return;
+      }
+      setSelectedFolderId(parent);
+      setExpanded((prev) => new Set(prev).add(parent!));
+      // Pour la création d’un écran, on ouvre directement la popup médias
+      void (async () => {
+        const created = await apiFetch<{ id: number; publicToken: string; slideshowPath: string }>(
+          `/api/folders/${parent}/screens`,
+          {
+            method: "POST",
+            body: JSON.stringify({ name: "Nouvel écran" }),
+          }
+        );
+        toast.success("Écran créé");
+        await loadTree();
+        await openDialog({
+          id: created.id,
+          folderId: parent!,
+          name: "Nouvel écran",
+          publicToken: created.publicToken,
+          revision: 0,
+          sortOrder: 0,
+          slideshowPath: created.slideshowPath,
+        });
+      })();
+      return;
+    } else if (parent !== null) {
+      setExpanded((prev) => new Set(prev).add(parent!));
+    }
+    setCreateState({ kind, parentFolderId: parent ?? null, name: "", busy: false });
+    setCreateOpen(true);
     queueMicrotask(() => pendingInputRef.current?.focus());
   }
 
-  async function submitInlineCreate() {
-    if (!pendingCreate) return;
-    if (!isAdmin) return;
-    const name = pendingCreate.name.trim();
+  async function submitCreate() {
+    if (!createState || !isAdmin) return;
+    const name = createState.name.trim();
     if (!name) return;
-    if (pendingCreate.kind === "folder") {
-      await apiFetch("/api/folders", {
-        method: "POST",
-        body: JSON.stringify({ name, parentId: pendingCreate.parentFolderId }),
-      });
-      toast.success("OK");
-      setPendingCreate(null);
+    setCreateState((p) => (p ? { ...p, busy: true } : p));
+    try {
+      if (createState.kind === "folder") {
+        await apiFetch<{ id: number }>("/api/folders", {
+          method: "POST",
+          body: JSON.stringify({ name, parentId: createState.parentFolderId }),
+        });
+        toast.success("Dossier créé");
+        setCreateOpen(false);
+        setCreateState(null);
+        await loadTree();
+        return;
+      }
+      const folderId = createState.parentFolderId;
+      if (folderId == null) {
+        toast.error(t("screens.noFolder"));
+        return;
+      }
+      const created = await apiFetch<{ id: number; publicToken: string; slideshowPath: string }>(
+        `/api/folders/${folderId}/screens`,
+        {
+          method: "POST",
+          body: JSON.stringify({ name }),
+        }
+      );
+      toast.success("Écran créé");
+      setCreateOpen(false);
+      setCreateState(null);
       await loadTree();
-      return;
+      await openDialog({
+        id: created.id,
+        folderId,
+        name,
+        publicToken: created.publicToken,
+        revision: 0,
+        sortOrder: 0,
+        slideshowPath: created.slideshowPath,
+      });
+    } finally {
+      setCreateState((p) => (p ? { ...p, busy: false } : p));
     }
-    const folderId = pickTargetFolderId(pendingCreate.parentFolderId);
-    if (folderId == null) {
-      toast.error(t("screens.noFolder"));
-      return;
-    }
-    await apiFetch(`/api/folders/${folderId}/screens`, {
-      method: "POST",
-      body: JSON.stringify({ name }),
-    });
-    toast.success("OK");
-    setPendingCreate(null);
-    await loadTree();
-  }
-
-  function cancelInlineCreate() {
-    setPendingCreate(null);
   }
 
   function requestDelete(type: "folder" | "screen", id: number, label: string) {
@@ -324,7 +421,7 @@ export function ScreensPage() {
     } else {
       await apiFetch(`/api/screens/${c.id}`, { method: "DELETE" });
     }
-    toast.success("OK");
+    toast.success(c.type === "folder" ? "Dossier supprimé" : "Écran supprimé");
     setConfirmOpen(false);
     confirmRef.current = null;
     await loadTree();
@@ -353,7 +450,7 @@ export function ScreensPage() {
         method: "PATCH",
         body: JSON.stringify({ parentId: folderId }),
       });
-      toast.success("OK");
+      toast.success("Dossier déplacé");
       await loadTree();
       return;
     }
@@ -362,7 +459,7 @@ export function ScreensPage() {
         method: "PATCH",
         body: JSON.stringify({ folderId }),
       });
-      toast.success("OK");
+      toast.success("Écran déplacé");
       await loadTree();
     }
   }
@@ -384,20 +481,25 @@ export function ScreensPage() {
         <ContextMenu>
           <ContextMenuTrigger
               className={cn(
-                "flex items-center gap-2 rounded px-2 py-1.5 text-sm hover:bg-muted/60",
-                selectedFolderId === folder.id && "bg-muted"
+                "group relative flex w-full items-center gap-2 rounded px-2 py-1.5 text-base",
+                "before:absolute before:inset-0 before:rounded before:bg-transparent group-hover:before:bg-muted/60 before:content-['']",
+                // Le repère visuel doit être au hover, pas au clic
               )}
               style={{ paddingLeft: 10 + depth * 14 }}
               draggable={isAdmin}
               onDragStart={(e) => onDragStart(e, { type: "folder", id: folder.id })}
               onDragOver={(e) => e.preventDefault()}
               onDrop={(e) => void onDropOnFolder(e, folder.id)}
-              onClick={() => setSelectedFolderId(folder.id)}
+              onClick={() => {
+                setSelectedFolderId(folder.id);
+                setSelectedScreenId(null);
+                if (hasChildren) toggleExpanded(folder.id);
+              }}
           >
             <button
               type="button"
               className={cn(
-                "text-muted-foreground flex size-5 items-center justify-center rounded hover:bg-muted",
+                "text-muted-foreground flex size-5 items-center justify-center rounded hover:bg-transparent group-hover:bg-transparent",
                 !hasChildren && "opacity-0"
               )}
               onClick={(e) => {
@@ -408,13 +510,13 @@ export function ScreensPage() {
             >
               <span className={cn("transition-transform", isOpen && "rotate-90")}>›</span>
             </button>
-            <span className="truncate font-medium">{folder.name}</span>
+            <span className="truncate font-medium relative">{folder.name}</span>
           </ContextMenuTrigger>
           <ContextMenuContent>
-            <ContextMenuItem onSelect={() => openInlineCreate("folder", folder.id)}>
+            <ContextMenuItem onSelect={() => openCreate("folder", folder.id)}>
               {t("screens.addFolder")}
             </ContextMenuItem>
-            <ContextMenuItem onSelect={() => openInlineCreate("screen", folder.id)}>
+            <ContextMenuItem onSelect={() => openCreate("screen", folder.id)}>
               {t("screens.addScreen")}
             </ContextMenuItem>
             <ContextMenuSeparator />
@@ -429,39 +531,20 @@ export function ScreensPage() {
 
         {isOpen ? (
           <>
-            {pendingCreate?.parentFolderId === folder.id ? (
-              <div
-                className="flex items-center gap-2 rounded px-2 py-1.5 text-sm"
-                style={{ paddingLeft: 28 + depth * 14 }}
-              >
-                <Input
-                  ref={pendingInputRef}
-                  value={pendingCreate.name}
-                  onChange={(e) =>
-                    setPendingCreate((p) => (p ? { ...p, name: e.target.value } : p))
-                  }
-                  placeholder={
-                    pendingCreate.kind === "folder"
-                      ? t("screens.folderName")
-                      : t("screens.screenName")
-                  }
-                  className="h-8"
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") void submitInlineCreate();
-                    if (e.key === "Escape") cancelInlineCreate();
-                  }}
-                  onBlur={() => cancelInlineCreate()}
-                />
-              </div>
-            ) : null}
-
             {folder.screens.map((s) => (
               <ContextMenu key={s.id}>
                 <ContextMenuTrigger
-                  className="flex items-center gap-2 rounded px-2 py-1.5 text-sm text-muted-foreground hover:bg-muted/60"
+                  className={cn(
+                    "flex w-full items-center gap-2 rounded px-2 py-1.5 text-base text-muted-foreground hover:bg-muted/60",
+                    selectedScreenId === s.id && "border-l-4 border-blue-500 bg-muted pl-1"
+                  )}
                   style={{ paddingLeft: 28 + depth * 14 }}
                   draggable={isAdmin}
                   onDragStart={(e) => onDragStart(e, { type: "screen", id: s.id })}
+                  onClick={() => {
+                    setSelectedScreenId(s.id);
+                    setSelectedFolderId(folder.id);
+                  }}
                   onDoubleClick={() =>
                     void openDialog({
                       id: s.id,
@@ -474,6 +557,7 @@ export function ScreensPage() {
                     })
                   }
                 >
+                  <Monitor className="size-4 shrink-0 text-muted-foreground/80" />
                   <span className="truncate">{s.name}</span>
                   <Button
                     type="button"
@@ -490,10 +574,25 @@ export function ScreensPage() {
                   </Button>
                 </ContextMenuTrigger>
                 <ContextMenuContent>
-                  <ContextMenuItem onSelect={() => openInlineCreate("folder", folder.id)}>
+                  <ContextMenuItem
+                    onSelect={() =>
+                      void openDialog({
+                        id: s.id,
+                        folderId: folder.id,
+                        name: s.name,
+                        publicToken: s.publicToken,
+                        revision: 0,
+                        sortOrder: 0,
+                        slideshowPath: `/show/${s.publicToken}`,
+                      })
+                    }
+                  >
+                    {t("screens.manageMedia")}
+                  </ContextMenuItem>
+                  <ContextMenuItem onSelect={() => openCreate("folder", folder.id)}>
                     {t("screens.addFolder")}
                   </ContextMenuItem>
-                  <ContextMenuItem onSelect={() => openInlineCreate("screen", folder.id)}>
+                  <ContextMenuItem onSelect={() => openCreate("screen", folder.id)}>
                     {t("screens.addScreen")}
                   </ContextMenuItem>
                   <ContextMenuSeparator />
@@ -526,9 +625,9 @@ export function ScreensPage() {
   }
 
   return (
-    <div className="min-h-[min(70vh,640px)]">
+    <div className="min-h-[calc(100vh-120px)]">
       <ContextMenu>
-        <ContextMenuTrigger className="block rounded-lg border border-border/60 bg-background p-2">
+        <ContextMenuTrigger className="block min-h-[calc(100vh-160px)] rounded-lg border border-border/60 bg-background p-2">
             {tree.length === 0 ? (
               <p className="text-muted-foreground p-4 text-sm">{t("screens.rootEmpty")}</p>
             ) : (
@@ -540,14 +639,62 @@ export function ScreensPage() {
             )}
         </ContextMenuTrigger>
         <ContextMenuContent>
-          <ContextMenuItem onSelect={() => openInlineCreate("folder", null)}>
+          <ContextMenuItem onSelect={() => openCreate("folder", null)}>
             {t("screens.addFolder")}
           </ContextMenuItem>
-          <ContextMenuItem onSelect={() => openInlineCreate("screen", null)}>
+          <ContextMenuItem onSelect={() => openCreate("screen", null)}>
             {t("screens.addScreen")}
           </ContextMenuItem>
         </ContextMenuContent>
       </ContextMenu>
+
+      <Dialog
+        open={createOpen}
+        onOpenChange={(o) => {
+          setCreateOpen(o);
+          if (!o) setCreateState(null);
+        }}
+      >
+        <DialogContent className="border-border/60 max-w-md">
+          <DialogHeader>
+            <DialogTitle>
+              {createState?.kind === "screen" ? t("screens.addScreen") : t("screens.addFolder")}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <Input
+              ref={pendingInputRef}
+              value={createState?.name ?? ""}
+              onChange={(e) => setCreateState((p) => (p ? { ...p, name: e.target.value } : p))}
+              placeholder={
+                createState?.kind === "screen" ? t("screens.screenName") : t("screens.folderName")
+              }
+              className="h-10"
+              onKeyDown={(e) => {
+                if (e.key === "Enter") void submitCreate();
+              }}
+              disabled={createState?.busy === true}
+            />
+            <div className="flex justify-end gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setCreateOpen(false)}
+                disabled={createState?.busy === true}
+              >
+                {t("common.cancel")}
+              </Button>
+              <Button
+                type="button"
+                onClick={() => void submitCreate()}
+                disabled={createState?.busy === true || !(createState?.name ?? "").trim()}
+              >
+                Créer
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
         <AlertDialogContent className="border-border/60">
@@ -572,7 +719,7 @@ export function ScreensPage() {
       </AlertDialog>
 
       <Dialog open={!!dialogScreen} onOpenChange={(o) => !o && setDialogScreen(null)}>
-        <DialogContent className="border-border/60 h-[92vh] w-[96vw] max-w-none gap-4 overflow-hidden rounded-xl p-4 shadow-lg">
+        <DialogContent className="border-border/60 h-[90vh] w-[90vw] max-w-none gap-4 overflow-hidden rounded-xl p-4 shadow-lg sm:max-w-none">
           <DialogHeader>
             <DialogTitle>
               {t("screens.dialogTitle")} — {dialogScreen?.name}
@@ -580,6 +727,27 @@ export function ScreensPage() {
           </DialogHeader>
           {dialogScreen ? (
             <div className="flex min-h-0 flex-1 flex-col gap-4">
+              <div className="flex items-center gap-2">
+                <Input
+                  value={dialogScreen.name}
+                  className="h-10 max-w-[520px]"
+                  onChange={(e) =>
+                    setDialogScreen((prev) => (prev ? { ...prev, name: e.target.value } : prev))
+                  }
+                  onBlur={() => {
+                    const name = dialogScreen.name.trim();
+                    if (!name) return;
+                    void (async () => {
+                      await apiFetch(`/api/screens/${dialogScreen.id}`, {
+                        method: "PATCH",
+                        body: JSON.stringify({ name }),
+                      });
+                      toast.success("Nom de l’écran mis à jour");
+                      await loadTree();
+                    })();
+                  }}
+                />
+              </div>
               <div className="flex items-center gap-2">
                 <Button type="button" variant="outline" size="sm" onClick={() => void copyUrl(dialogScreen.publicToken)}>
                   <Copy className="mr-1 size-4" />
@@ -605,6 +773,7 @@ export function ScreensPage() {
                         key={it.id}
                         item={it}
                         token={dialogScreen.publicToken}
+                        onUpdateDuration={(id, ms) => void updateItemDuration(id, ms)}
                         onDelete={(id) => void deleteItem(id)}
                       />
                     ))}

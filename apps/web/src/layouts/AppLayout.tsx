@@ -8,11 +8,9 @@ import {
   Settings,
   HelpCircle,
   Menu,
-  Search,
 } from "lucide-react";
 import { useAuth } from "@/context/auth-context";
 import { cn } from "@/lib/utils";
-import { Input } from "@/components/ui/input";
 import { buttonVariants } from "@/components/ui/button";
 import {
   Sheet,
@@ -40,29 +38,14 @@ function NavItems({
 }) {
   const { t } = useTranslation();
   const { user } = useAuth();
-  const [filter, setFilter] = useState("");
   const visible = useMemo(() => {
-    const list = items.filter(
+    return items.filter(
       (i) => !("adminOnly" in i && i.adminOnly) || user?.role === "ADMIN"
     );
-    const q = filter.trim().toLowerCase();
-    if (!q) return list;
-    return list.filter((i) => t(i.key).toLowerCase().includes(q));
-  }, [filter, user?.role, t]);
+  }, [user?.role]);
 
   return (
     <>
-      <div className="px-3 pb-2">
-        <div className="relative">
-          <Search className="text-muted-foreground pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2" />
-          <Input
-            value={filter}
-            onChange={(e) => setFilter(e.target.value)}
-            placeholder={t("layout.searchPlaceholder")}
-            className="h-9 border-border/80 bg-background/80 pl-9 text-sm shadow-sm"
-          />
-        </div>
-      </div>
       <nav className={cn("flex flex-1 flex-col gap-0.5 px-2 pb-3", navClassName)}>
         {visible.map((item) => (
           <NavLink

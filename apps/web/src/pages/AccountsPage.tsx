@@ -22,7 +22,6 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { PageHeader } from "@/components/PageHeader";
 import { Card, CardContent } from "@/components/ui/card";
 import {
   ContextMenu,
@@ -227,7 +226,7 @@ export function AccountsPage() {
         method: "PATCH",
         body: JSON.stringify(body),
       });
-      toast.success("OK");
+      toast.success("Compte mis à jour");
     }
     setOpen(false);
     resetForm();
@@ -237,13 +236,11 @@ export function AccountsPage() {
   async function removeUser(id: number) {
     await apiFetch(`/api/users/${id}`, { method: "DELETE" });
     await loadUsers();
-    toast.success("OK");
+    toast.success("Compte supprimé");
   }
 
   return (
     <div>
-      <PageHeader title={t("accounts.title")} />
-
       <ContextMenu>
         <ContextMenuTrigger className="block">
           <Card className="border-border/60 shadow-sm">

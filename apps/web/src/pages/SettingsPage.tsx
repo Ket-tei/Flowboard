@@ -3,7 +3,6 @@ import { useTheme } from "next-themes";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/context/auth-context";
 import { setAppLanguage } from "@/i18n";
-import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
@@ -35,7 +34,6 @@ export function SettingsPage() {
 
   return (
     <div>
-      <PageHeader title={t("settings.title")} />
       <Card className="max-w-xl border-border/60 shadow-sm">
         <CardHeader className="pb-4">
           <CardTitle className="text-base font-medium">{t("settings.connectedAs")}</CardTitle>
