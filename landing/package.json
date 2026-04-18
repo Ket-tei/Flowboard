@@ -1,0 +1,16 @@
+{
+  "name": "flowboard-landing",
+  "private": true,
+  "version": "0.0.0",
+  "workspaces": [
+    "web",
+    "api"
+  ],
+  "scripts": {
+    "dev": "npm run dev --workspace web",
+    "dev:web": "npm run dev --workspace web",
+    "dev:api": "npm run dev --workspace api",
+    "build": "npm run build --workspace web",
+    "preview": "npm run preview --workspace web"
+  }
+}

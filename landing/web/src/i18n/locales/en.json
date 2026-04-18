@@ -1,0 +1,91 @@
+{
+  "nav": {
+    "product": "Product",
+    "pricing": "Pricing",
+    "login": "Sign in",
+    "signup": "Sign up"
+  },
+  "hero": {
+    "title": "Control your dynamic screens with ease",
+    "subtitle": "Manage slideshows, media, and accounts from an intuitive interface. Deploy in one click.",
+    "cta": "Get started for free",
+    "ctaDemo": "See the demo",
+    "feat1": "Instant deployment",
+    "feat2": "Secure and reliable",
+    "feat3": "Accessible anywhere"
+  },
+  "sections": {
+    "dashboard": "Dashboard",
+    "dashboardDesc": "A modular dashboard with widgets you can add, remove, and rearrange freely.",
+    "media": "Media management",
+    "mediaDesc": "Add your images, videos, and GIFs, adjust durations, and organize the playback order.",
+    "slideshow": "Live slideshow",
+    "slideshowDesc": "Preview the slideshow generated from the media you just configured in real time.",
+    "accounts": "Account management",
+    "accountsDesc": "Create admin or user accounts with granular permissions per folder and screen."
+  },
+  "pricing": {
+    "title": "Simple and transparent pricing",
+    "subtitle": "Choose the plan that fits your needs. Upgrade anytime.",
+    "cta": "Choose this plan",
+    "popular": "Popular",
+    "freeName": "Free",
+    "freePrice": "$0",
+    "freeUnit": "/ month",
+    "freeF1": "3 screens maximum",
+    "freeF2": "2 media per screen",
+    "freeF3": "1 admin account",
+    "premiumName": "Premium",
+    "premiumPrice": "$10",
+    "premiumUnit": "/ month",
+    "premiumF1": "15 screens maximum",
+    "premiumF2": "5 media per screen",
+    "premiumF3": "Unlimited accounts",
+    "proName": "Pro",
+    "proPrice": "$1",
+    "proUnit": "/ screen / month",
+    "proF1": "Unlimited screens",
+    "proF2": "Unlimited media per screen",
+    "proF3": "Priority support"
+  },
+  "checkout": {
+    "title": "Create your instance",
+    "plan": "Selected plan",
+    "instanceName": "Instance name",
+    "instancePlaceholder": "my-company",
+    "adminUsername": "Admin account email",
+    "adminPassword": "Admin password",
+    "slugInvalid": "Invalid format (lowercase letters, digits, and hyphens)",
+    "slugTaken": "This instance name already exists.",
+    "emailInvalid": "Invalid email address",
+    "emailTaken": "This email is already in use.",
+    "passwordTooShort": "Password must be at least 6 characters long.",
+    "submit": "Create my instance",
+    "creating": "Creating…",
+    "deploying": "Deploying…",
+    "deployingDesc": "Your instance is being created. This may take a few minutes.",
+    "stepValidation": "Data validation",
+    "stepDocker": "Infrastructure setup",
+    "stepReady": "Instance ready",
+    "genericError": "Unable to create the instance. Please try again.",
+    "failedTitle": "Deployment failed",
+    "retry": "Try again",
+    "successTitle": "Instance created successfully!",
+    "successDesc": "Your Flowboard workspace is ready.",
+    "yourUrl": "Your address:",
+    "goToInstance": "Go to my instance"
+  },
+  "login": {
+    "title": "Sign in",
+    "emailLabel": "Your email",
+    "emailPlaceholder": "you@company.com",
+    "emailInvalid": "Invalid email address",
+    "submit": "Continue",
+    "loading": "Looking up…",
+    "notFound": "No instance is associated with this email.",
+    "genericError": "Login failed. Please try again."
+  },
+  "footer": {
+  
+  }
+}

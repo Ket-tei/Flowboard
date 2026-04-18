@@ -1,2 +1,9 @@
 # Lien workspace npm (junction vers apps/web) — ne pas versionner en double
 node_modules/web
+
+# Landing page (projet séparé)
+landing/node_modules
+landing/dist
+landing/web/node_modules
+landing/web/dist
+landing/web/.vite
