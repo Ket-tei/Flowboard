@@ -10,3 +10,4 @@ landing/dist
 landing/web/node_modules
 landing/web/dist
 landing/web/.vite
+landing/api/db.json

@@ -1,5 +1,5 @@
 import { execFile } from "node:child_process";
-import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { mkdir, readFile, rm, unlink, writeFile } from "node:fs/promises";
 import path from "node:path";
 import crypto from "node:crypto";
 import { fileURLToPath } from "node:url";
@@ -53,6 +53,8 @@ export async function provisionInstance({ slug, email, password, planId }) {
   const dbUser = `fb_${slug.replace(/-/g, "_")}`;
   const origin = buildInstanceUrl(slug);
 
+  const deleteToken = randomSecret(32);
+
   const vars = {
     MYSQL_ROOT_PASSWORD: randomSecret(32),
     MYSQL_DATABASE: dbName,
@@ -63,6 +65,9 @@ export async function provisionInstance({ slug, email, password, planId }) {
     ADMIN_PASSWORD: password,
     CORS_ORIGIN: origin,
     APP_ROOT: APP_ROOT.replace(/\\/g, "/"),
+    INSTANCE_SLUG: slug,
+    INSTANCE_DELETE_TOKEN: deleteToken,
+    LANDING_API_URL: `${BASE_PROTOCOL}://${BASE_HOST}`,
   };
 
   const composeContent = await renderTemplate(slug, vars);
@@ -88,7 +93,28 @@ export async function provisionInstance({ slug, email, password, planId }) {
 
   await registerInGateway(slug, projectName);
 
-  return { url: origin, projectName };
+  return { url: origin, projectName, deleteToken };
+}
+
+export async function deprovisionInstance({ slug }) {
+  const projectName = `fb-${slug}`;
+  const instanceDir = path.join(INSTANCES_DIR, slug);
+  const composePath = path.join(instanceDir, "docker-compose.yml");
+
+  try {
+    await exec("docker", ["compose", "-p", projectName, "-f", composePath, "down", "-v"], {
+      cwd: APP_ROOT,
+    });
+  } catch (err) {
+    console.warn(`[deprovisioner] docker down failed for ${slug}:`, err.message);
+  }
+
+  const gatewayConf = path.join(GATEWAY_INSTANCES_DIR, `${slug}.conf`);
+  try { await unlink(gatewayConf); } catch {}
+
+  await reloadGateway();
+
+  try { await rm(instanceDir, { recursive: true, force: true }); } catch {}
 }
 
 async function registerInGateway(slug, projectName) {

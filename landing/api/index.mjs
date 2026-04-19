@@ -1,7 +1,7 @@
 import http from "node:http";
 import { readFile, writeFile } from "node:fs/promises";
 import { PORT, DB_PATH, buildInstanceUrl, buildRedirectUrl } from "./config.mjs";
-import { provisionInstance } from "./provisioner.mjs";
+import { provisionInstance, deprovisionInstance } from "./provisioner.mjs";
 
 const SLUG_RE = /^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$/;
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -167,6 +167,7 @@ const server = http.createServer(async (req, res) => {
       account.status = "ready";
       account.url = provisionResult.url;
       account.projectName = provisionResult.projectName;
+      account.deleteToken = provisionResult.deleteToken;
       await saveDb(db);
 
       const redirectUrl = buildRedirectUrl(slug, planId);
@@ -188,6 +189,34 @@ const server = http.createServer(async (req, res) => {
         status: match.status ?? "unknown",
         planId: match.planId,
       });
+    }
+
+    if (req.url?.startsWith("/api/instances/") && req.method === "DELETE") {
+      const slug = req.url.replace("/api/instances/", "").replace(/\/$/, "");
+      const token = req.headers.authorization?.replace(/^Bearer\s+/i, "");
+
+      const { accounts } = await loadDb();
+      const match = accounts.find((a) => a.slug === slug);
+      if (!match) return sendJson(res, 404, { error: "Not found" });
+      if (!token || !match.deleteToken || token !== match.deleteToken) {
+        return sendJson(res, 403, { error: "Forbidden" });
+      }
+
+      sendJson(res, 202, { status: "deleting" });
+
+      const db = await loadDb();
+      const idx = db.accounts.findIndex((a) => a.slug === slug);
+      if (idx !== -1) { db.accounts[idx].status = "deleting"; await saveDb(db); }
+
+      deprovisionInstance({ slug })
+        .then(async () => {
+          const db2 = await loadDb();
+          db2.accounts = db2.accounts.filter((a) => a.slug !== slug);
+          await saveDb(db2);
+          console.log(`[landing-api] Instance ${slug} deprovisioned.`);
+        })
+        .catch((err) => console.error(`[landing-api] Deprovisioning ${slug} failed:`, err));
+      return;
     }
 
     return sendJson(res, 404, { error: "Not found" });

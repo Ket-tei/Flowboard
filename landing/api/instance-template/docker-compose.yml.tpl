@@ -30,6 +30,9 @@ services:
       CORS_ORIGIN: "{{CORS_ORIGIN}}"
       PORT: "3001"
       NODE_ENV: production
+      INSTANCE_SLUG: "{{INSTANCE_SLUG}}"
+      INSTANCE_DELETE_TOKEN: "{{INSTANCE_DELETE_TOKEN}}"
+      LANDING_API_URL: "{{LANDING_API_URL}}"
     volumes:
       - uploads_data:/data/uploads
     depends_on:

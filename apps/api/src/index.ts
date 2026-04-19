@@ -14,6 +14,7 @@ import { registerFolderRoutes } from "./routes/folders.js";
 import { registerPublicRoutes } from "./routes/public.js";
 import { registerScreenRoutes } from "./routes/screens.js";
 import { registerDashboardRoutes } from "./routes/dashboard.js";
+import { registerInstanceRoutes } from "./routes/instance.js";
 import { registerUserRoutes } from "./routes/users.js";
 import { ValidationError } from "./schemas/validate.js";
 import { AuthError } from "./services/auth.service.js";
@@ -111,6 +112,7 @@ async function buildApp() {
       await registerUserRoutes(scope);
       await registerAdminTreeRoutes(scope);
       await registerDashboardRoutes(scope);
+      await registerInstanceRoutes(scope);
     },
     { prefix: "/api" }
   );

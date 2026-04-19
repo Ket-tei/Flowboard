@@ -27,8 +27,8 @@ const items = [
   { to: "/app/dashboard", key: "nav.dashboard", icon: LayoutDashboard },
   { to: "/app/screens", key: "nav.screens", icon: MonitorPlay },
   { to: "/app/accounts", key: "nav.accounts", icon: Users, adminOnly: true },
-  { to: "/app/settings", key: "nav.settings", icon: Settings },
   { to: "/app/billing", key: "nav.billing", icon: CreditCard },
+  { to: "/app/settings", key: "nav.settings", icon: Settings },
   { to: "/app/help", key: "nav.help", icon: HelpCircle },
 ] as const;
 

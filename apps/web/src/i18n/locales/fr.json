@@ -150,7 +150,13 @@
     "role": "Rôle",
     "dangerZone": "Zone de danger",
     "logout": "Se déconnecter",
-    "logoutDesc": "Fermer votre session sur cet appareil"
+    "logoutDesc": "Fermer votre session sur cet appareil",
+    "deleteInstance": "Supprimer l'instance",
+    "deleteInstanceDesc": "Supprime définitivement cette instance et toutes ses données",
+    "deleting": "Suppression…",
+    "deleteConfirmTitle": "Supprimer l'instance ?",
+    "deleteConfirmDesc": "Cette action est irréversible. Tous les écrans, dossiers et comptes seront définitivement supprimés.",
+    "deleteConfirmButton": "Supprimer définitivement"
   },
   "billing": {
     "title": "Facturation",

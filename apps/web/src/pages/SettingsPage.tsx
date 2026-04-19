@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useTheme } from "next-themes";
 import { useNavigate } from "react-router-dom";
@@ -7,10 +8,22 @@ import {
   Monitor,
   Moon,
   Sun,
+  Trash2,
 } from "lucide-react";
 import { useAuth } from "@/context/auth-context";
 import { setAppLanguage } from "@/i18n";
+import { apiFetch } from "@/lib/api";
 import { Button } from "@/components/ui/button";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import {
   Select,
   SelectContent,
@@ -64,10 +77,23 @@ export function SettingsPage() {
   const { theme, setTheme } = useTheme();
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   async function onLogout() {
     await logout();
     navigate("/login", { replace: true });
+  }
+
+  async function onDeleteInstance() {
+    setDeleting(true);
+    try {
+      await apiFetch("/api/instance/self", { method: "DELETE" });
+      await logout();
+      window.location.href = "/";
+    } catch {
+      setDeleting(false);
+    }
   }
 
   const initial = (user?.username ?? "?")[0].toUpperCase();
@@ -162,7 +188,7 @@ export function SettingsPage() {
           <SectionHeader title={t("settings.dangerZone")} />
         </div>
 
-        <div className="px-5 pb-2">
+        <div className="px-5 pb-2 divide-y divide-border/40">
           <SettingRow
             icon={LogOut}
             label={t("settings.logout")}
@@ -178,8 +204,45 @@ export function SettingsPage() {
               {t("settings.logout")}
             </Button>
           </SettingRow>
+
+          {user?.role === "ADMIN" && (
+            <SettingRow
+              icon={Trash2}
+              label={t("settings.deleteInstance")}
+              description={t("settings.deleteInstanceDesc")}
+            >
+              <Button
+                type="button"
+                variant="destructive"
+                size="sm"
+                className="h-8 text-xs font-medium"
+                onClick={() => setDeleteOpen(true)}
+                disabled={deleting}
+              >
+                {deleting ? t("settings.deleting") : t("settings.deleteInstance")}
+              </Button>
+            </SettingRow>
+          )}
         </div>
       </div>
+
+      <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t("settings.deleteConfirmTitle")}</AlertDialogTitle>
+            <AlertDialogDescription>{t("settings.deleteConfirmDesc")}</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => void onDeleteInstance()}
+            >
+              {t("settings.deleteConfirmButton")}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

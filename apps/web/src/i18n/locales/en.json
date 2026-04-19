@@ -150,7 +150,13 @@
     "role": "Role",
     "dangerZone": "Danger zone",
     "logout": "Sign out",
-    "logoutDesc": "Close your session on this device"
+    "logoutDesc": "Close your session on this device",
+    "deleteInstance": "Delete instance",
+    "deleteInstanceDesc": "Permanently delete this instance and all its data",
+    "deleting": "Deleting…",
+    "deleteConfirmTitle": "Delete instance?",
+    "deleteConfirmDesc": "This action is irreversible. All screens, folders, and accounts will be permanently deleted.",
+    "deleteConfirmButton": "Delete permanently"
   },
   "billing": {
     "title": "Billing",
