@@ -72,6 +72,7 @@ export function DashboardPage() {
               size="sm"
               className="h-8 rounded-full text-xs gap-1.5"
               onClick={() => setShowPicker(!showPicker)}
+              data-tutorial="dashboard-add-widget"
             >
               <Plus className="size-3.5" />
               {t("dashboard.addWidget")}

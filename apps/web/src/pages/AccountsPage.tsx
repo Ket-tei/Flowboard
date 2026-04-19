@@ -319,7 +319,7 @@ export function AccountsPage() {
           if (!next) resetForm();
         }}
       >
-        <DialogContent className="max-w-lg overflow-hidden rounded-2xl border-border/60 p-0">
+        <DialogContent className="max-w-2xl overflow-hidden rounded-2xl border-border/60 p-0">
           <DialogHeader className="border-b border-border/40 px-6 py-4">
             <DialogTitle className="text-base">
               {editId == null ? t("accounts.add") : t("accounts.edit")}
@@ -357,7 +357,7 @@ export function AccountsPage() {
                 {t("accounts.role")}
               </Label>
               <Select value={role} onValueChange={(v) => setRole(v as "ADMIN" | "USER")}>
-                <SelectTrigger className="h-10 rounded-xl">
+                <SelectTrigger className="h-10 w-full rounded-xl">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent className="rounded-xl">

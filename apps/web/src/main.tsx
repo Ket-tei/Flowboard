@@ -5,6 +5,8 @@ import { ThemeProvider } from "next-themes";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Toaster } from "@/components/ui/sonner";
 import { AuthProvider } from "@/context/auth-context";
+import { TutorialProvider } from "@/context/tutorial-context";
+import { TutorialOverlay } from "@/components/tutorial/TutorialOverlay";
 import "./i18n";
 import "./index.css";
 import App from "./App.tsx";
@@ -15,8 +17,11 @@ createRoot(document.getElementById("root")!).render(
       <TooltipProvider>
         <BrowserRouter>
           <AuthProvider>
-            <App />
-            <Toaster richColors position="top-center" />
+            <TutorialProvider>
+              <App />
+              <TutorialOverlay />
+              <Toaster richColors position="top-center" />
+            </TutorialProvider>
           </AuthProvider>
         </BrowserRouter>
       </TooltipProvider>

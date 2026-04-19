@@ -14,16 +14,15 @@ import { useAuth } from "@/context/auth-context";
 import { setAppLanguage } from "@/i18n";
 import { apiFetch } from "@/lib/api";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+  DialogDescription,
+} from "@/components/ui/dialog";
 import {
   Select,
   SelectContent,
@@ -79,6 +78,9 @@ export function SettingsPage() {
   const navigate = useNavigate();
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [deleteConfirmText, setDeleteConfirmText] = useState("");
+
+  const expectedHostname = window.location.hostname;
 
   async function onLogout() {
     await logout();
@@ -94,6 +96,11 @@ export function SettingsPage() {
     } catch {
       setDeleting(false);
     }
+  }
+
+  function handleDeleteOpenChange(open: boolean) {
+    setDeleteOpen(open);
+    if (!open) setDeleteConfirmText("");
   }
 
   const initial = (user?.username ?? "?")[0].toUpperCase();
@@ -226,23 +233,49 @@ export function SettingsPage() {
         </div>
       </div>
 
-      <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>{t("settings.deleteConfirmTitle")}</AlertDialogTitle>
-            <AlertDialogDescription>{t("settings.deleteConfirmDesc")}</AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
-            <AlertDialogAction
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+      <Dialog open={deleteOpen} onOpenChange={handleDeleteOpenChange}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-destructive">{t("settings.deleteConfirmTitle")}</DialogTitle>
+            <DialogDescription>{t("settings.deleteConfirmDesc")}</DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-3 py-2">
+            <p className="text-sm text-muted-foreground">
+              {t("settings.deleteConfirmHostnameLabel")}{" "}
+              <span className="font-mono font-semibold text-foreground">{expectedHostname}</span>
+            </p>
+            <Input
+              value={deleteConfirmText}
+              onChange={(e) => setDeleteConfirmText(e.target.value)}
+              onPaste={(e) => e.preventDefault()}
+              placeholder={expectedHostname}
+              className="h-10 rounded-xl font-mono text-sm"
+              autoComplete="off"
+            />
+          </div>
+
+          <DialogFooter className="gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => handleDeleteOpenChange(false)}
+            >
+              {t("common.cancel")}
+            </Button>
+            <Button
+              type="button"
+              variant="destructive"
+              size="sm"
+              disabled={deleteConfirmText !== expectedHostname || deleting}
               onClick={() => void onDeleteInstance()}
             >
-              {t("settings.deleteConfirmButton")}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+              {deleting ? t("settings.deleting") : t("settings.deleteConfirmButton")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

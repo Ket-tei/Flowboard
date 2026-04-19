@@ -1,4 +1,4 @@
-import { Suspense, lazy, useMemo, useState } from "react";
+import { Suspense, lazy, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { GripVertical, X } from "lucide-react";
 import { useSortable } from "@dnd-kit/sortable";
@@ -22,7 +22,6 @@ export function WidgetCard({
 }) {
   const { t } = useTranslation();
   const def = getWidgetDef(widgetId);
-  const [hovered, setHovered] = useState(false);
 
   const {
     attributes,
@@ -52,9 +51,7 @@ export function WidgetCard({
     <div
       ref={setNodeRef}
       style={style}
-      className={`${sizeClasses[def.size]} rounded-xl border border-border/60 bg-card overflow-hidden flex flex-col min-h-[160px]`}
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
+      className={`group ${sizeClasses[def.size]} rounded-xl border border-border/60 bg-card overflow-hidden flex flex-col min-h-[160px]`}
     >
       <div className="flex items-center gap-2 px-4 pt-3 pb-1">
         <button
@@ -70,9 +67,7 @@ export function WidgetCard({
         </span>
         <button
           onClick={onRemove}
-          className={`rounded-full p-1 text-muted-foreground/50 hover:text-destructive hover:bg-destructive/10 transition-opacity ${
-            hovered ? "opacity-100" : "opacity-0"
-          }`}
+          className="rounded-full p-1 text-muted-foreground/50 hover:text-destructive hover:bg-destructive/10 opacity-0 group-hover:opacity-100 transition-opacity"
           title={t("dashboard.removeWidget")}
         >
           <X className="size-3.5" />

@@ -156,7 +156,9 @@
     "deleting": "Deleting…",
     "deleteConfirmTitle": "Delete instance?",
     "deleteConfirmDesc": "This action is irreversible. All screens, folders, and accounts will be permanently deleted.",
-    "deleteConfirmButton": "Delete permanently"
+    "deleteConfirmButton": "Delete permanently",
+    "deleteConfirmHostnameLabel": "Type the address of your instance to confirm:",
+    "deleteConfirmHostnamePlaceholder": "your-instance.flowboard.canope.org"
   },
   "billing": {
     "title": "Billing",
@@ -172,7 +174,36 @@
   "help": {
     "subtitle": "Documentation and tutorials.",
     "title": "Help",
-    "placeholder": "An interactive tutorial will be available here."
+    "placeholder": "An interactive tutorial will be available here.",
+    "aboutTitle": "About Flowboard",
+    "aboutDesc": "Flowboard is a SaaS platform for managing dynamic screen slideshows. Create folders, screens, and media playlists, then display them on any screen. Manage multiple user accounts with granular folder and screen permissions.",
+    "linksTitle": "Useful links",
+    "landingLink": "Flowboard website",
+    "canopeLink": "Canope website",
+    "supportEmail": "Contact support",
+    "tutorialTitle": "Interactive tutorial",
+    "tutorialDesc": "Discover the main features of Flowboard in a few guided steps. You can relaunch this tutorial at any time from this page.",
+    "startTutorial": "Launch tutorial"
+  },
+  "tutorial": {
+    "skip": "Skip",
+    "next": "Next",
+    "finish": "Finish",
+    "step": "{{current}} / {{total}}",
+    "step1Title": "Welcome to Flowboard!",
+    "step1Desc": "Let us guide you through the main features in a few steps. Click Next to continue.",
+    "step2Title": "Dashboard",
+    "step2Desc": "Your workspace at a glance. Widgets give you key statistics — add, remove, and rearrange them freely.",
+    "step3Title": "Screens",
+    "step3Desc": "Create folders and screens, then add your images, videos, and GIFs to build your slideshows.",
+    "step4Title": "Accounts",
+    "step4Desc": "Create user accounts and assign granular access to specific folders and screens.",
+    "step5Title": "Settings",
+    "step5Desc": "Change the interface language, switch theme, or sign out of your session.",
+    "step6Title": "Customise your dashboard",
+    "step6Desc": "Click here to add or remove widgets and personalise your dashboard view.",
+    "step7Title": "You're all set!",
+    "step7Desc": "Explore Flowboard at your own pace. You can relaunch this tutorial from the Help tab at any time."
   },
   "show": {
     "missingToken": "Missing token",

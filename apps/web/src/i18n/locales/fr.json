@@ -156,7 +156,9 @@
     "deleting": "Suppression…",
     "deleteConfirmTitle": "Supprimer l'instance ?",
     "deleteConfirmDesc": "Cette action est irréversible. Tous les écrans, dossiers et comptes seront définitivement supprimés.",
-    "deleteConfirmButton": "Supprimer définitivement"
+    "deleteConfirmButton": "Supprimer définitivement",
+    "deleteConfirmHostnameLabel": "Tapez l'adresse de votre instance pour confirmer :",
+    "deleteConfirmHostnamePlaceholder": "votre-instance.flowboard.canope.org"
   },
   "billing": {
     "title": "Facturation",
@@ -172,7 +174,36 @@
   "help": {
     "subtitle": "Documentation et tutoriels.",
     "title": "Aide",
-    "placeholder": "Un tutoriel interactif sera disponible ici."
+    "placeholder": "Un tutoriel interactif sera disponible ici.",
+    "aboutTitle": "À propos de Flowboard",
+    "aboutDesc": "Flowboard est une plateforme SaaS de gestion de diaporamas pour écrans dynamiques. Créez des dossiers, des écrans et des playlists de médias, puis diffusez-les sur n'importe quel écran. Gérez plusieurs comptes utilisateurs avec des permissions granulaires par dossier et par écran.",
+    "linksTitle": "Liens utiles",
+    "landingLink": "Site Flowboard",
+    "canopeLink": "Site Canopé",
+    "supportEmail": "Contacter le support",
+    "tutorialTitle": "Tutoriel interactif",
+    "tutorialDesc": "Découvrez les principales fonctionnalités de Flowboard en quelques étapes guidées. Vous pouvez relancer ce tutoriel à tout moment depuis cette page.",
+    "startTutorial": "Lancer le tutoriel"
+  },
+  "tutorial": {
+    "skip": "Passer",
+    "next": "Suivant",
+    "finish": "Terminer",
+    "step": "{{current}} / {{total}}",
+    "step1Title": "Bienvenue sur Flowboard !",
+    "step1Desc": "Laissez-nous vous guider à travers les principales fonctionnalités en quelques étapes. Cliquez sur Suivant pour continuer.",
+    "step2Title": "Tableau de bord",
+    "step2Desc": "Votre espace de travail en un coup d'œil. Les widgets vous donnent les statistiques clés — ajoutez, supprimez et réorganisez-les librement.",
+    "step3Title": "Écrans",
+    "step3Desc": "Créez des dossiers et des écrans, puis ajoutez vos images, vidéos et GIFs pour construire vos diaporamas.",
+    "step4Title": "Comptes",
+    "step4Desc": "Créez des comptes utilisateurs et attribuez des accès granulaires à des dossiers et des écrans spécifiques.",
+    "step5Title": "Paramètres",
+    "step5Desc": "Changez la langue de l'interface, basculez le thème ou déconnectez-vous de votre session.",
+    "step6Title": "Personnalisez votre tableau de bord",
+    "step6Desc": "Cliquez ici pour ajouter ou supprimer des widgets et personnaliser votre vue du tableau de bord.",
+    "step7Title": "Vous êtes prêt !",
+    "step7Desc": "Explorez Flowboard à votre rythme. Vous pouvez relancer ce tutoriel depuis l'onglet Aide à tout moment."
   },
   "show": {
     "missingToken": "Jeton manquant",

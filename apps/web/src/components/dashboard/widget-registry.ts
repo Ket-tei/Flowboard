@@ -123,8 +123,7 @@ export function getWidgetDef(id: string): WidgetDef | undefined {
 }
 
 export function getDefaultLayout(role: "ADMIN" | "USER"): Array<{ widgetId: string; order: number }> {
-  return WIDGET_REGISTRY.filter((w) => w.roles.includes(role)).map((w, i) => ({
-    widgetId: w.id,
-    order: i,
-  }));
+  return WIDGET_REGISTRY.filter((w) => w.roles.includes(role))
+    .slice(0, 5)
+    .map((w, i) => ({ widgetId: w.id, order: i }));
 }

@@ -24,12 +24,12 @@ import {
 import { Separator } from "@/components/ui/separator";
 
 const items = [
-  { to: "/app/dashboard", key: "nav.dashboard", icon: LayoutDashboard },
-  { to: "/app/screens", key: "nav.screens", icon: MonitorPlay },
-  { to: "/app/accounts", key: "nav.accounts", icon: Users, adminOnly: true },
-  { to: "/app/billing", key: "nav.billing", icon: CreditCard },
-  { to: "/app/settings", key: "nav.settings", icon: Settings },
-  { to: "/app/help", key: "nav.help", icon: HelpCircle },
+  { to: "/app/dashboard", key: "nav.dashboard", icon: LayoutDashboard, tutorial: "nav-dashboard" },
+  { to: "/app/screens", key: "nav.screens", icon: MonitorPlay, tutorial: "nav-screens" },
+  { to: "/app/accounts", key: "nav.accounts", icon: Users, adminOnly: true, tutorial: "nav-accounts" },
+  { to: "/app/billing", key: "nav.billing", icon: CreditCard, tutorial: "nav-billing" },
+  { to: "/app/settings", key: "nav.settings", icon: Settings, tutorial: "nav-settings" },
+  { to: "/app/help", key: "nav.help", icon: HelpCircle, tutorial: "nav-help" },
 ] as const;
 
 function NavItems({
@@ -54,6 +54,7 @@ function NavItems({
           key={item.to}
           to={item.to}
           onClick={onNavigate}
+          data-tutorial={item.tutorial}
           className={({ isActive }) =>
             cn(
               "flex items-center gap-3 rounded-lg px-3 py-2 text-[13px] font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-border",
@@ -89,7 +90,7 @@ export function AppLayout() {
   return (
     <div className="bg-muted/40 flex h-svh flex-col overflow-hidden md:flex-row">
       <aside className="bg-card hidden w-56 shrink-0 flex-col border-r border-border shadow-[1px_0_0_0] shadow-border/60 md:flex">
-        <div className="border-b border-border px-4 py-3">
+        <div className="border-b border-border px-4 h-12 flex items-center">
           <NavLink to="/app/dashboard" className="flex items-center gap-2">
             <img src={logoSrc} alt={t("app.name")} className="h-7 w-auto" />
             <span className="text-foreground text-[15px] font-semibold tracking-tight">
