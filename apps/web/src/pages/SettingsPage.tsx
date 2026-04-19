@@ -92,7 +92,7 @@ export function SettingsPage() {
     try {
       await apiFetch("/api/instance/self", { method: "DELETE" });
       await logout();
-      window.location.href = "/";
+      window.location.href = "https://flowboard.canope.org";
     } catch {
       setDeleting(false);
     }
