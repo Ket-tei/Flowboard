@@ -66,13 +66,6 @@ export function ScreensPage() {
 
   const flatFolders = useMemo(() => flattenTree(tree.tree), [tree.tree]);
 
-  function parentLabel(): string {
-    if (!createState) return "";
-    if (createState.parentFolderId === "__root__") return t("screens.rootLevel");
-    const f = flatFolders.find((x) => String(x.id) === createState.parentFolderId);
-    return f?.name ?? "";
-  }
-
   function openCreateDialog(kind: "folder" | "screen", preselectedParentId: number | null) {
     if (!tree.isAdmin) return;
     let parentVal: string;

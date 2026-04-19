@@ -7,7 +7,6 @@ import {
   Monitor,
   Moon,
   Sun,
-  User,
 } from "lucide-react";
 import { useAuth } from "@/context/auth-context";
 import { setAppLanguage } from "@/i18n";
