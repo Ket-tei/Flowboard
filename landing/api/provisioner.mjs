@@ -97,26 +97,37 @@ export async function provisionInstance({ slug, email, password, planId }) {
 }
 
 export async function deprovisionInstance({ slug }) {
-  const projectName = `fb-${slug}`;
   const instanceDir = path.join(INSTANCES_DIR, slug);
-  const composePath = path.join(instanceDir, "docker-compose.yml");
 
-  // Stop containers under the fb-<slug> project name (used by update.sh and provisioner)
-  try {
-    await exec("docker", ["compose", "-p", projectName, "-f", composePath, "down", "-v"], {
-      cwd: instanceDir,
-    });
-  } catch (err) {
-    console.warn(`[deprovisioner] docker down (fb-) failed for ${slug}:`, err.message);
-  }
+  // Stop & remove all containers for both possible project names (label-based, no compose file needed)
+  for (const project of [`fb-${slug}`, slug]) {
+    try {
+      const { stdout } = await exec("docker", [
+        "ps", "-aq", "--filter", `label=com.docker.compose.project=${project}`,
+      ]);
+      const ids = stdout.trim().split("\n").filter(Boolean);
+      if (ids.length > 0) {
+        await exec("docker", ["stop", ...ids]);
+        await exec("docker", ["rm", "-v", ...ids]);
+        console.log(`[deprovisioner] stopped ${ids.length} container(s) for project ${project}`);
+      }
+    } catch (err) {
+      console.warn(`[deprovisioner] container cleanup failed for ${project}:`, err.message);
+    }
 
-  // Also stop any legacy containers under the bare slug project name
-  try {
-    await exec("docker", ["compose", "-f", composePath, "down", "-v"], {
-      cwd: instanceDir,
-    });
-  } catch (err) {
-    console.warn(`[deprovisioner] docker down (bare) failed for ${slug}:`, err.message);
+    // Remove associated volumes
+    try {
+      const { stdout } = await exec("docker", [
+        "volume", "ls", "-q", "--filter", `label=com.docker.compose.project=${project}`,
+      ]);
+      const vols = stdout.trim().split("\n").filter(Boolean);
+      if (vols.length > 0) {
+        await exec("docker", ["volume", "rm", ...vols]);
+        console.log(`[deprovisioner] removed ${vols.length} volume(s) for project ${project}`);
+      }
+    } catch (err) {
+      console.warn(`[deprovisioner] volume cleanup failed for ${project}:`, err.message);
+    }
   }
 
   const gatewayConf = path.join(GATEWAY_INSTANCES_DIR, `${slug}.conf`);
