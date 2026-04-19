@@ -11,6 +11,7 @@
     "screens": "Screens",
     "accounts": "Accounts",
     "settings": "Settings",
+    "billing": "Billing",
     "help": "Help"
   },
   "login": {
@@ -24,9 +25,45 @@
     "hidePassword": "Hide password"
   },
   "dashboard": {
-    "subtitle": "Overview — customizable modules coming soon.",
+    "subtitle": "Overview of your Flowboard workspace.",
     "title": "Dashboard",
-    "placeholder": "Information modules will be added here."
+    "addWidget": "Add widget",
+    "removeWidget": "Remove",
+    "noWidgets": "No widgets displayed. Click \"Add widget\" to get started.",
+    "resetLayout": "Reset",
+    "widgetPicker": "Available widgets",
+    "widgetAlreadyAdded": "Already added",
+    "add": "Add",
+    "close": "Close",
+    "savingLayout": "Saving…",
+    "widgets": {
+      "screenCount": "Screens",
+      "screenCountDesc": "Total number of screens",
+      "folderCount": "Folders",
+      "folderCountDesc": "Total number of folders",
+      "mediaCount": "Media",
+      "mediaCountDesc": "Total number of media files",
+      "avgMediaPerScreen": "Avg. media / screen",
+      "avgMediaPerScreenDesc": "Average media per screen",
+      "totalDuration": "Total duration",
+      "totalDurationDesc": "Combined duration of all media",
+      "mediaByType": "Media by type",
+      "mediaByTypeDesc": "IMAGE / VIDEO / GIF breakdown",
+      "userCount": "Users",
+      "userCountDesc": "Total number of accounts",
+      "adminVsUser": "Admins vs Users",
+      "adminVsUserDesc": "Role distribution",
+      "screensPerFolder": "Top folders",
+      "screensPerFolderDesc": "Folders with most screens",
+      "recentAccounts": "Recent accounts",
+      "recentAccountsDesc": "Recently created accounts",
+      "admins": "Admins",
+      "users": "Users",
+      "images": "Images",
+      "videos": "Videos",
+      "gifs": "GIFs",
+      "noData": "No data"
+    }
   },
   "screens": {
     "subtitle": "Organize folders, screens, and slideshow media.",
@@ -37,7 +74,7 @@
     "screensInFolder": "Screens in this folder",
     "addScreen": "New screen",
     "screenName": "Screen name",
-    "copyUrl": "Copy slideshow URL",
+    "copyUrl": "Copy URL",
     "copied": "URL copied",
     "manageMedia": "Manage media",
     "duration": "Duration (ms)",
@@ -50,7 +87,27 @@
     "doubleClickHint": "Double-click a screen to manage media.",
     "emptyFolder": "This folder is empty",
     "breadcrumbHome": "Screens",
-    "rootEmpty": "Create a first folder to get started."
+    "rootEmpty": "Create a first folder to get started.",
+    "create": "Create",
+    "newScreenDefault": "New screen",
+    "folderCreated": "Folder created",
+    "screenCreated": "Screen created",
+    "folderDeleted": "Folder deleted",
+    "screenDeleted": "Screen deleted",
+    "folderMoved": "Folder moved",
+    "screenMoved": "Screen moved",
+    "screenNameUpdated": "Screen name updated",
+    "mediaOrderSaved": "Media order saved",
+    "mediaDeleted": "Media deleted",
+    "mediaDurationUpdated": "Media duration updated",
+    "mediaAdded": "Media added",
+    "dragDrop": "Drag & drop",
+    "orClickToAdd": "or click to add",
+    "confirmDeleteTitle": "Delete?",
+    "confirmDeleteFolder": "This folder and all its contents will be deleted: \"{{name}}\".",
+    "confirmDeleteScreen": "This screen will be deleted: \"{{name}}\".",
+    "parentFolder": "Parent folder",
+    "rootLevel": "Root (no parent)"
   },
   "accounts": {
     "edit": "Edit",
@@ -65,24 +122,60 @@
     "access": "Folder and screen access",
     "save": "Save",
     "delete": "Delete",
-    "created": "Account created"
+    "created": "Account created",
+    "updated": "Account updated",
+    "deleted": "Account deleted",
+    "missingFields": "Please fill in all required fields",
+    "confirmDeleteTitle": "Delete?",
+    "confirmDeleteDesc": "The account \"{{name}}\" will be deleted.",
+    "members": "Members",
+    "membersCount": "{{count}} account(s)",
+    "noAccounts": "No accounts created",
+    "passwordHint": "Leave empty to keep unchanged",
+    "permissions": "Permissions",
+    "createdAt": "Created on"
   },
   "settings": {
     "subtitle": "Language, theme, and session.",
     "title": "Settings",
+    "preferences": "Preferences",
     "language": "Language",
+    "languageDesc": "Interface language",
     "theme": "Theme",
+    "themeDesc": "Application appearance",
     "themeLight": "Light",
     "themeDark": "Dark",
-    "themeSystem": "Default (system)",
+    "themeSystem": "System",
     "connectedAs": "Signed in as",
     "role": "Role",
-    "logout": "Sign out"
+    "dangerZone": "Danger zone",
+    "logout": "Sign out",
+    "logoutDesc": "Close your session on this device"
+  },
+  "billing": {
+    "title": "Billing",
+    "subtitle": "Manage your subscription and payments.",
+    "currentPlan": "Current plan",
+    "planLabel": "Premium",
+    "status": "Status",
+    "active": "Active",
+    "paymentSection": "Payment",
+    "paymentDesc": "Payment setup will be available soon.",
+    "setupPayment": "Set up payment"
   },
   "help": {
     "subtitle": "Documentation and tutorials.",
     "title": "Help",
     "placeholder": "An interactive tutorial will be available here."
   },
-  "common": { "loading": "Loading…", "cancel": "Cancel", "close": "Close", "delete": "Delete" }
+  "show": {
+    "missingToken": "Missing token",
+    "noMedia": "No media"
+  },
+  "common": {
+    "loading": "Loading…",
+    "cancel": "Cancel",
+    "close": "Close",
+    "delete": "Delete"
+  }
 }

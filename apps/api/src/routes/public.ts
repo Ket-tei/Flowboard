@@ -1,14 +1,10 @@
 import type { FastifyInstance } from "fastify";
 import { createReadStream } from "node:fs";
-import path from "node:path";
 import { stat } from "node:fs/promises";
 import { eq, and } from "drizzle-orm";
 import { db } from "../db/index.js";
 import { screenItems, screens } from "../db/schema.js";
-
-function uploadDir(): string {
-  return path.resolve(process.env.UPLOAD_DIR ?? "./data/uploads");
-}
+import { resolveFilePath } from "../services/upload.service.js";
 
 export async function registerPublicRoutes(app: FastifyInstance) {
   app.get("/public/screens/:token/manifest", async (request, reply) => {
@@ -63,17 +59,41 @@ export async function registerPublicRoutes(app: FastifyInstance) {
     if (!item[0]) {
       return reply.status(404).send({ error: "not found" });
     }
-    const full = path.join(uploadDir(), item[0].storageKey);
+    const full = resolveFilePath(item[0].storageKey);
+    let fileStat;
     try {
-      const st = await stat(full);
-      if (!st.isFile()) {
+      fileStat = await stat(full);
+      if (!fileStat.isFile()) {
         return reply.status(404).send({ error: "not found" });
       }
     } catch {
       return reply.status(404).send({ error: "not found" });
     }
-    reply.header("Content-Type", item[0].mimeType);
+
+    const totalSize = fileStat.size;
+    const mime = item[0].mimeType;
+    const rangeHeader = request.headers.range;
+
+    reply.header("Accept-Ranges", "bytes");
     reply.header("Cache-Control", "public, max-age=31536000, immutable");
+
+    if (rangeHeader) {
+      const match = /bytes=(\d+)-(\d*)/.exec(rangeHeader);
+      if (match) {
+        const start = parseInt(match[1], 10);
+        const end = match[2] ? parseInt(match[2], 10) : totalSize - 1;
+        const chunkSize = end - start + 1;
+
+        reply.status(206);
+        reply.header("Content-Type", mime);
+        reply.header("Content-Range", `bytes ${start}-${end}/${totalSize}`);
+        reply.header("Content-Length", chunkSize);
+        return reply.send(createReadStream(full, { start, end }));
+      }
+    }
+
+    reply.header("Content-Type", mime);
+    reply.header("Content-Length", totalSize);
     return reply.send(createReadStream(full));
   });
 }

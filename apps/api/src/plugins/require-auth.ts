@@ -21,7 +21,9 @@ export async function authPreHandler(request: FastifyRequest, reply: FastifyRepl
   }
 }
 
-export function requireAdmin(request: FastifyRequest, reply: FastifyReply) {
+export async function adminPreHandler(request: FastifyRequest, reply: FastifyReply) {
+  await authPreHandler(request, reply);
+  if (reply.sent) return;
   if (request.authUser?.role !== "ADMIN") {
     return reply.status(403).send({ error: "Forbidden" });
   }

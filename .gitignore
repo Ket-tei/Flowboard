@@ -1,6 +1,9 @@
 # Lien workspace npm (junction vers apps/web) — ne pas versionner en double
 node_modules/web
 
+# Uploads utilisateurs
+apps/api/data/
+
 # Landing page (projet séparé)
 landing/node_modules
 landing/dist

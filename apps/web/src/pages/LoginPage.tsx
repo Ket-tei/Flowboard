@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
+import logoSrc from "@/assets/LogoTemporaire.png";
 
 export function LoginPage() {
   const { t } = useTranslation();
@@ -36,13 +37,16 @@ export function LoginPage() {
   }
 
   return (
-    <div className="flex min-h-svh items-center justify-center bg-zinc-100 p-6 dark:bg-zinc-950">
+    <div className="flex min-h-svh items-center justify-center bg-muted/40 p-6">
       <Card className="border-border/80 w-full max-w-md rounded-lg shadow-md">
         <CardContent className="p-8 pt-8">
-          <h1 className="text-foreground mb-6 text-2xl font-bold">
-            {t("login.title")}
-            <span className="text-blue-600 dark:text-blue-400"> {t("app.name")}</span>
-          </h1>
+          <div className="mb-6 flex items-center gap-3">
+            <img src={logoSrc} alt={t("app.name")} className="h-10 w-auto" />
+            <h1 className="text-foreground text-2xl font-bold">
+              {t("login.title")}
+              <span className="text-primary"> {t("app.name")}</span>
+            </h1>
+          </div>
           <form onSubmit={onSubmit} className="flex flex-col gap-4">
             <div className="space-y-1.5">
               <Label htmlFor="username" className="text-sm font-medium">
@@ -108,12 +112,12 @@ export function LoginPage() {
                 </button>
               </div>
             </div>
-            {error ? (
+            {error && (
               <p className="text-destructive bg-destructive/10 rounded-md px-3 py-2 text-sm">{error}</p>
-            ) : null}
+            )}
             <Button
               type="submit"
-              className="mt-2 h-10 w-full rounded-lg bg-blue-600 font-medium hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-500"
+              className="mt-2 h-10 w-full rounded-lg font-medium"
               disabled={pending}
             >
               {t("login.submit")}

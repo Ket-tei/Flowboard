@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useParams } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { apiUrl } from "@/lib/api";
 
 type ManifestItem = {
@@ -21,17 +22,18 @@ const SW_PATH = "/sw.js";
 
 function registerSw(): void {
   if (!("serviceWorker" in navigator)) return;
-  void navigator.serviceWorker.register(SW_PATH, { scope: "/" }).catch(() => {
-    /* ignore */
-  });
+  void navigator.serviceWorker.register(SW_PATH, { scope: "/" }).catch(() => {});
 }
 
 export function ShowPage() {
+  const { t } = useTranslation();
   const { token } = useParams<{ token: string }>();
   const [manifest, setManifest] = useState<Manifest | null>(null);
   const [index, setIndex] = useState(0);
   const revisionRef = useRef<number | null>(null);
   const lastGoodSrcRef = useRef<string | null>(null);
+  const videoEndedRef = useRef(false);
+  const videoRef = useRef<HTMLVideoElement | null>(null);
 
   const manifestUrl = token
     ? apiUrl(`/api/public/screens/${encodeURIComponent(token)}/manifest`)
@@ -49,7 +51,7 @@ export function ShowPage() {
         setIndex(0);
       }
     } catch {
-      /* hors-ligne : conserver le dernier manifest */
+      /* offline: keep current manifest */
     }
   }, [manifestUrl]);
 
@@ -74,16 +76,43 @@ export function ShowPage() {
   }, []);
 
   const src = current ? resolveUrl(current.url) : null;
-  const isVideo = current?.type === "VIDEO" || current?.type === "GIF";
+  const isVideo = current?.type === "VIDEO";
+  const isGif = current?.type === "GIF";
+
+  const advance = useCallback(() => {
+    setIndex((i) => (n > 1 ? (i + 1) % n : 0));
+  }, [n]);
 
   useEffect(() => {
     if (!current || !src) return;
+
+    if (isVideo) {
+      videoEndedRef.current = false;
+      // Safety fallback: if video doesn't fire onEnded after 3x duration or 60s
+      const maxMs = Math.max(current.durationMs * 3, 60000);
+      const fallback = window.setTimeout(() => {
+        if (!videoEndedRef.current) advance();
+      }, maxMs);
+      return () => window.clearTimeout(fallback);
+    }
+
+    // Images and GIFs: advance after configured duration
     const ms = Math.max(1000, current.durationMs);
-    const t = window.setTimeout(() => {
-      setIndex((i) => (n ? (i + 1) % n : 0));
-    }, ms);
-    return () => window.clearTimeout(t);
-  }, [current?.id, current?.durationMs, src, n]);
+    const timer = window.setTimeout(advance, ms);
+    return () => window.clearTimeout(timer);
+  }, [current?.id, current?.durationMs, src, isVideo, advance]);
+
+  // Force play on video mount (some browsers block autoplay)
+  useEffect(() => {
+    if (isVideo && videoRef.current) {
+      videoRef.current.play().catch(() => {});
+    }
+  }, [isVideo, src]);
+
+  function onVideoEnded() {
+    videoEndedRef.current = true;
+    advance();
+  }
 
   function onLoaded() {
     if (src) lastGoodSrcRef.current = src;
@@ -93,17 +122,16 @@ export function ShowPage() {
     setIndex((i) => (n > 1 ? (i + 1) % n : i));
   }
 
-  const bgSrc = src ?? lastGoodSrcRef.current;
   const fgSrc = src ?? lastGoodSrcRef.current;
 
   if (!token) {
-    return <div className="bg-black text-white">Missing token</div>;
+    return <div className="bg-black text-white p-4">{t("show.missingToken")}</div>;
   }
 
   if (!manifest) {
     return (
       <div className="flex min-h-svh items-center justify-center bg-black text-white">
-        Chargement…
+        {t("common.loading")}
       </div>
     );
   }
@@ -111,7 +139,7 @@ export function ShowPage() {
   if (n === 0) {
     return (
       <div className="flex min-h-svh items-center justify-center bg-black text-white">
-        Aucun média
+        {t("show.noMedia")}
       </div>
     );
   }
@@ -120,13 +148,18 @@ export function ShowPage() {
     return <div className="min-h-svh bg-black" />;
   }
 
+  // GIFs are rendered as <img> (native animated support, lighter than <video>)
+  // Videos are rendered as <video> with proper playback controls
+  // Images are rendered as <img>
+
   return (
     <div className="fixed inset-0 overflow-hidden bg-black">
+      {/* Blurred background layer */}
       <div className="absolute inset-0" aria-hidden>
         {isVideo ? (
           <video
-            key={`bg-${current?.id}`}
-            src={bgSrc ?? undefined}
+            key={`bg-v-${current?.id}`}
+            src={fgSrc}
             className="absolute inset-0 size-full scale-110 object-cover blur-3xl brightness-[0.35]"
             muted
             playsInline
@@ -135,30 +168,43 @@ export function ShowPage() {
           />
         ) : (
           <img
-            key={`bg-${current?.id}`}
-            src={bgSrc ?? undefined}
+            key={`bg-i-${current?.id}`}
+            src={fgSrc}
             alt=""
             className="absolute inset-0 size-full scale-110 object-cover blur-3xl brightness-[0.35]"
           />
         )}
       </div>
+
+      {/* Foreground media */}
       <div className="absolute inset-0 flex items-center justify-center">
         {isVideo ? (
           <video
-            key={`fg-${current?.id}`}
-            src={fgSrc ?? undefined}
+            ref={videoRef}
+            key={`fg-v-${current?.id}`}
+            src={fgSrc}
             className="max-h-full max-w-full object-contain"
             muted
             playsInline
             autoPlay
-            loop
+            preload="auto"
+            onEnded={onVideoEnded}
             onLoadedData={onLoaded}
+            onError={onMediaError}
+          />
+        ) : isGif ? (
+          <img
+            key={`fg-g-${current?.id}`}
+            src={fgSrc}
+            alt=""
+            className="max-h-full max-w-full object-contain"
+            onLoad={onLoaded}
             onError={onMediaError}
           />
         ) : (
           <img
-            key={`fg-${current?.id}`}
-            src={fgSrc ?? undefined}
+            key={`fg-i-${current?.id}`}
+            src={fgSrc}
             alt=""
             className="max-h-full max-w-full object-contain"
             onLoad={onLoaded}

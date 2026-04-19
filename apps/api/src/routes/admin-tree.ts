@@ -1,7 +1,7 @@
 import type { FastifyInstance } from "fastify";
 import { db } from "../db/index.js";
 import { folders, screens } from "../db/schema.js";
-import { authPreHandler, requireAdmin } from "../plugins/require-auth.js";
+import { adminPreHandler } from "../plugins/require-auth.js";
 
 type FolderRow = typeof folders.$inferSelect;
 type ScreenRow = typeof screens.$inferSelect;
@@ -29,24 +29,18 @@ function buildTree(
 }
 
 export async function registerAdminTreeRoutes(app: FastifyInstance) {
-  app.get(
-    "/admin/folder-screen-tree",
-    { preHandler: authPreHandler },
-    async (request, reply) => {
-      const err = requireAdmin(request, reply);
-      if (err) return err;
-      const allFolders = await db.select().from(folders);
-      const allScreens = await db.select().from(screens);
-      const map = new Map<number, ScreenRow[]>();
-      for (const s of allScreens) {
-        const list = map.get(s.folderId) ?? [];
-        list.push(s);
-        map.set(s.folderId, list);
-      }
-      for (const list of map.values()) {
-        list.sort((a, b) => a.sortOrder - b.sortOrder || a.id - b.id);
-      }
-      return { tree: buildTree(allFolders, map, null) };
+  app.get("/admin/folder-screen-tree", { preHandler: adminPreHandler }, async () => {
+    const allFolders = await db.select().from(folders);
+    const allScreens = await db.select().from(screens);
+    const map = new Map<number, ScreenRow[]>();
+    for (const s of allScreens) {
+      const list = map.get(s.folderId) ?? [];
+      list.push(s);
+      map.set(s.folderId, list);
     }
-  );
+    for (const list of map.values()) {
+      list.sort((a, b) => a.sortOrder - b.sortOrder || a.id - b.id);
+    }
+    return { tree: buildTree(allFolders, map, null) };
+  });
 }

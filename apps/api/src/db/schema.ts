@@ -85,3 +85,13 @@ export const screensRelations = relations(screens, ({ one, many }) => ({
 export const screenItemsRelations = relations(screenItems, ({ one }) => ({
   screen: one(screens, { fields: [screenItems.screenId], references: [screens.id] }),
 }));
+
+export const dashboardLayouts = mysqlTable("dashboard_layouts", {
+  userId: bigint("user_id", { mode: "number" }).primaryKey(),
+  layoutJson: varchar("layout_json", { length: 8000 }).notNull().default("[]"),
+  updatedAt: timestamp("updated_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
+});
+
+export const dashboardLayoutsRelations = relations(dashboardLayouts, ({ one }) => ({
+  user: one(users, { fields: [dashboardLayouts.userId], references: [users.id] }),
+}));

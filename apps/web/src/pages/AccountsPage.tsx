@@ -2,12 +2,21 @@ import { useCallback, useEffect, useState } from "react";
 import { Navigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
+import {
+  Pencil,
+  Plus,
+  Shield,
+  Trash2,
+  User as UserIcon,
+  Users,
+} from "lucide-react";
 import { apiFetch } from "@/lib/api";
 import { useAuth } from "@/context/auth-context";
+import { AccessTree, collectDescendantIds } from "@/components/accounts/AccessTree";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Checkbox } from "@/components/ui/checkbox";
 import {
   Select,
   SelectContent,
@@ -22,14 +31,6 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Card, CardContent } from "@/components/ui/card";
-import {
-  ContextMenu,
-  ContextMenuContent,
-  ContextMenuItem,
-  ContextMenuSeparator,
-  ContextMenuTrigger,
-} from "@/components/ui/context-menu";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -40,75 +41,15 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { cn } from "@/lib/utils";
+import type { TreeFolder } from "@/types/tree.types";
+import type { UserRow } from "@/types/user.types";
 
-type TreeScreen = { id: number; name: string; publicToken: string };
-type TreeNode = {
-  id: number;
-  parentId: number | null;
-  name: string;
-  sortOrder: number;
-  screens: TreeScreen[];
-  children: TreeNode[];
-};
-
-type UserRow = {
-  id: number;
-  username: string;
-  role: "ADMIN" | "USER";
-  createdAt: string;
-};
-
-function AccessTree({
-  nodes,
-  depth,
-  folderIds,
-  screenIds,
-  onToggleFolder,
-  onToggleScreen,
-}: {
-  nodes: TreeNode[];
-  depth: number;
-  folderIds: Set<number>;
-  screenIds: Set<number>;
-  onToggleFolder: (id: number, checked: boolean) => void;
-  onToggleScreen: (id: number, checked: boolean) => void;
-}) {
+function SectionHeader({ title }: { title: string }) {
   return (
-    <div className="space-y-1" style={{ paddingLeft: depth * 12 }}>
-      {nodes.map((n) => (
-        <div key={n.id} className="space-y-1">
-          <label className="flex cursor-pointer items-center gap-2 text-sm">
-            <Checkbox
-              checked={folderIds.has(n.id)}
-              onCheckedChange={(v) => onToggleFolder(n.id, v === true)}
-            />
-            <span className="font-medium">{n.name}</span>
-          </label>
-          {n.screens.map((s) => (
-            <label
-              key={s.id}
-              className="flex cursor-pointer items-center gap-2 pl-6 text-sm text-muted-foreground"
-            >
-              <Checkbox
-                checked={screenIds.has(s.id)}
-                onCheckedChange={(v) => onToggleScreen(s.id, v === true)}
-              />
-              <span>{s.name}</span>
-            </label>
-          ))}
-          {n.children.length > 0 ? (
-            <AccessTree
-              nodes={n.children}
-              depth={depth + 1}
-              folderIds={folderIds}
-              screenIds={screenIds}
-              onToggleFolder={onToggleFolder}
-              onToggleScreen={onToggleScreen}
-            />
-          ) : null}
-        </div>
-      ))}
-    </div>
+    <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground pb-1 pt-2">
+      {title}
+    </h3>
   );
 }
 
@@ -116,7 +57,8 @@ export function AccountsPage() {
   const { t } = useTranslation();
   const { user } = useAuth();
   const [users, setUsers] = useState<UserRow[]>([]);
-  const [tree, setTree] = useState<TreeNode[]>([]);
+  const [tree, setTree] = useState<TreeFolder[]>([]);
+  const [loadingUsers, setLoadingUsers] = useState(true);
   const [open, setOpen] = useState(false);
   const [editId, setEditId] = useState<number | null>(null);
   const [username, setUsername] = useState("");
@@ -130,10 +72,11 @@ export function AccountsPage() {
   const loadUsers = useCallback(async () => {
     const r = await apiFetch<{ users: UserRow[] }>("/api/users");
     setUsers(r.users);
+    setLoadingUsers(false);
   }, []);
 
   const loadTree = useCallback(async () => {
-    const r = await apiFetch<{ tree: TreeNode[] }>("/api/admin/folder-screen-tree");
+    const r = await apiFetch<{ tree: TreeFolder[] }>("/api/admin/folder-screen-tree");
     setTree(r.tree);
   }, []);
 
@@ -172,35 +115,14 @@ export function AccountsPage() {
       );
       setFolderIds(new Set(a.folderIds));
       setScreenIds(new Set(a.screenIds));
-    } else {
-      setFolderIds(new Set());
-      setScreenIds(new Set());
     }
     setOpen(true);
-  }
-
-  function toggleFolder(id: number, checked: boolean) {
-    setFolderIds((prev) => {
-      const n = new Set(prev);
-      if (checked) n.add(id);
-      else n.delete(id);
-      return n;
-    });
-  }
-
-  function toggleScreen(id: number, checked: boolean) {
-    setScreenIds((prev) => {
-      const n = new Set(prev);
-      if (checked) n.add(id);
-      else n.delete(id);
-      return n;
-    });
   }
 
   async function saveUser() {
     if (editId == null) {
       if (!username.trim() || !password) {
-        toast.error("Missing fields");
+        toast.error(t("accounts.missingFields"));
         return;
       }
       await apiFetch("/api/users", {
@@ -226,7 +148,7 @@ export function AccountsPage() {
         method: "PATCH",
         body: JSON.stringify(body),
       });
-      toast.success("Compte mis à jour");
+      toast.success(t("accounts.updated"));
     }
     setOpen(false);
     resetForm();
@@ -236,65 +158,147 @@ export function AccountsPage() {
   async function removeUser(id: number) {
     await apiFetch(`/api/users/${id}`, { method: "DELETE" });
     await loadUsers();
-    toast.success("Compte supprimé");
+    toast.success(t("accounts.deleted"));
   }
 
+  if (loadingUsers) {
+    return (
+      <div className="space-y-4">
+        <Skeleton className="h-20 w-full rounded-2xl" />
+        <Skeleton className="h-64 w-full rounded-2xl" />
+      </div>
+    );
+  }
+
+  const initial = (s: string) => (s[0] ?? "?").toUpperCase();
+
   return (
-    <div>
-      <ContextMenu>
-        <ContextMenuTrigger className="block">
-          <Card className="border-border/60 shadow-sm">
-            <CardContent className="p-0">
-              <div className="text-muted-foreground grid grid-cols-[1fr_140px] gap-4 border-b border-border/60 px-4 py-2 text-xs font-medium">
-                <span>{t("accounts.username")}</span>
-                <span className="text-right">{t("accounts.role")}</span>
-              </div>
+    <div className="space-y-5">
+      {/* Header card */}
+      <div className="rounded-2xl border border-border/60 bg-card p-5">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="flex size-10 items-center justify-center rounded-xl bg-primary/10">
+              <Users className="size-5 text-primary" />
+            </div>
+            <div>
+              <p className="text-base font-semibold">{t("accounts.members")}</p>
+              <p className="text-xs text-muted-foreground">
+                {t("accounts.membersCount", { count: users.length })}
+              </p>
+            </div>
+          </div>
+          <Button
+            type="button"
+            size="sm"
+            className="h-9 gap-1.5 rounded-full px-4 text-xs"
+            onClick={openCreate}
+          >
+            <Plus className="size-3.5" />
+            {t("accounts.add")}
+          </Button>
+        </div>
+      </div>
 
-              <div className="divide-y divide-border/40">
-                {users.map((u) => (
-                  <ContextMenu key={u.id}>
-                    <ContextMenuTrigger className="grid cursor-default grid-cols-[1fr_140px] items-center gap-4 px-4 py-3 text-sm hover:bg-muted/40">
-                      <span className="font-medium">{u.username}</span>
-                      <span className="text-muted-foreground text-right">{u.role}</span>
-                    </ContextMenuTrigger>
-                    <ContextMenuContent>
-                      <ContextMenuItem onSelect={() => void openEdit(u)}>
-                        {t("accounts.edit")}
-                      </ContextMenuItem>
-                      <ContextMenuSeparator />
-                      <ContextMenuItem
-                        variant="destructive"
-                        onSelect={() => {
-                          setConfirmUser(u);
-                          setConfirmOpen(true);
-                        }}
-                      >
-                        {t("common.delete")}
-                      </ContextMenuItem>
-                    </ContextMenuContent>
-                  </ContextMenu>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        </ContextMenuTrigger>
-        <ContextMenuContent>
-          <ContextMenuItem onSelect={openCreate}>{t("accounts.add")}</ContextMenuItem>
-        </ContextMenuContent>
-      </ContextMenu>
+      {/* Members list */}
+      <div className="rounded-2xl border border-border/60 bg-card">
+        <div className="px-5 pt-4 pb-1">
+          <SectionHeader title={t("accounts.members")} />
+        </div>
 
+        <div className="px-5 pb-3 divide-y divide-border/40">
+          {users.length === 0 ? (
+            <p className="py-8 text-center text-sm text-muted-foreground">
+              {t("accounts.noAccounts")}
+            </p>
+          ) : (
+            users.map((u) => (
+              <div
+                key={u.id}
+                className="group flex items-center gap-3 py-3.5 transition-colors"
+              >
+                <div
+                  className={cn(
+                    "flex size-10 shrink-0 items-center justify-center rounded-full text-sm font-bold",
+                    u.role === "ADMIN"
+                      ? "bg-primary text-primary-foreground"
+                      : "bg-muted text-muted-foreground"
+                  )}
+                >
+                  {initial(u.username)}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-2">
+                    <p className="truncate text-sm font-medium">{u.username}</p>
+                    <span
+                      className={cn(
+                        "inline-flex shrink-0 items-center gap-1 rounded-full px-2.5 py-0.5 text-[10px] font-semibold leading-none",
+                        u.role === "ADMIN"
+                          ? "bg-blue-700 text-white"
+                          : "bg-muted text-muted-foreground"
+                      )}
+                    >
+                      {u.role === "ADMIN" ? (
+                        <Shield className="size-2.5" />
+                      ) : (
+                        <UserIcon className="size-2.5" />
+                      )}
+                      {u.role === "ADMIN" ? t("accounts.admin") : t("accounts.user")}
+                    </span>
+                  </div>
+                  {u.createdAt && (
+                    <p className="mt-0.5 text-[11px] text-muted-foreground">
+                      {t("accounts.createdAt")}{" "}
+                      {new Date(u.createdAt).toLocaleDateString()}
+                    </p>
+                  )}
+                </div>
+                <div className="flex shrink-0 items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="size-8 rounded-full"
+                    onClick={() => void openEdit(u)}
+                  >
+                    <Pencil className="size-3.5" />
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="size-8 rounded-full text-destructive hover:bg-destructive/10 hover:text-destructive"
+                    onClick={() => {
+                      setConfirmUser(u);
+                      setConfirmOpen(true);
+                    }}
+                  >
+                    <Trash2 className="size-3.5" />
+                  </Button>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+      </div>
+
+      {/* Delete confirmation */}
       <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
-        <AlertDialogContent className="border-border/60">
+        <AlertDialogContent className="rounded-2xl border-border/60">
           <AlertDialogHeader>
-            <AlertDialogTitle>Supprimer ?</AlertDialogTitle>
+            <AlertDialogTitle>{t("accounts.confirmDeleteTitle")}</AlertDialogTitle>
             <AlertDialogDescription>
-              {confirmUser ? `Le compte “${confirmUser.username}” sera supprimé.` : null}
+              {confirmUser
+                ? t("accounts.confirmDeleteDesc", { name: confirmUser.username })
+                : null}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
+            <AlertDialogCancel className="rounded-full">
+              {t("common.cancel")}
+            </AlertDialogCancel>
             <AlertDialogAction
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              className="rounded-full bg-destructive text-destructive-foreground hover:bg-destructive/90"
               onClick={() => {
                 if (!confirmUser) return;
                 void removeUser(confirmUser.id);
@@ -307,6 +311,7 @@ export function AccountsPage() {
         </AlertDialogContent>
       </AlertDialog>
 
+      {/* Create / Edit dialog */}
       <Dialog
         open={open}
         onOpenChange={(next) => {
@@ -314,59 +319,119 @@ export function AccountsPage() {
           if (!next) resetForm();
         }}
       >
-        <DialogContent className="max-h-[90vh] max-w-lg overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>{editId == null ? t("accounts.add") : t("accounts.save")}</DialogTitle>
+        <DialogContent className="max-w-lg overflow-hidden rounded-2xl border-border/60 p-0">
+          <DialogHeader className="border-b border-border/40 px-6 py-4">
+            <DialogTitle className="text-base">
+              {editId == null ? t("accounts.add") : t("accounts.edit")}
+            </DialogTitle>
           </DialogHeader>
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label>{t("accounts.username")}</Label>
+
+          <div className="space-y-5 px-6 py-5">
+            <div className="space-y-1.5">
+              <Label className="text-xs font-medium text-muted-foreground">
+                {t("accounts.username")}
+              </Label>
               <Input
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
                 disabled={editId != null}
+                className="h-10 rounded-xl"
               />
             </div>
-            <div className="space-y-2">
-              <Label>{t("accounts.password")}</Label>
+
+            <div className="space-y-1.5">
+              <Label className="text-xs font-medium text-muted-foreground">
+                {t("accounts.password")}
+              </Label>
               <Input
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder={editId != null ? "••••••••" : ""}
+                placeholder={editId != null ? t("accounts.passwordHint") : ""}
+                className="h-10 rounded-xl"
               />
             </div>
-            <div className="space-y-2">
-              <Label>{t("accounts.role")}</Label>
-              <Select
-                value={role}
-                onValueChange={(v) => setRole(v as "ADMIN" | "USER")}
-              >
-                <SelectTrigger>
+
+            <div className="space-y-1.5">
+              <Label className="text-xs font-medium text-muted-foreground">
+                {t("accounts.role")}
+              </Label>
+              <Select value={role} onValueChange={(v) => setRole(v as "ADMIN" | "USER")}>
+                <SelectTrigger className="h-10 rounded-xl">
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="ADMIN">{t("accounts.admin")}</SelectItem>
-                  <SelectItem value="USER">{t("accounts.user")}</SelectItem>
+                <SelectContent className="rounded-xl">
+                  <SelectItem value="ADMIN" className="rounded-lg">
+                    <span className="flex items-center gap-2">
+                      <Shield className="size-3.5" />
+                      {t("accounts.admin")}
+                    </span>
+                  </SelectItem>
+                  <SelectItem value="USER" className="rounded-lg">
+                    <span className="flex items-center gap-2">
+                      <UserIcon className="size-3.5" />
+                      {t("accounts.user")}
+                    </span>
+                  </SelectItem>
                 </SelectContent>
               </Select>
             </div>
-            {role === "USER" ? (
-              <div className="space-y-2">
-                <Label>{t("accounts.access")}</Label>
-                <ScrollArea className="h-64 rounded-lg border border-border/60 bg-muted/20 p-3">
+
+            {role === "USER" && (
+              <div className="space-y-1.5">
+                <Label className="text-xs font-medium text-muted-foreground">
+                  {t("accounts.permissions")}
+                </Label>
+                <ScrollArea className="h-48 rounded-xl border border-border/60 bg-muted/20 p-3">
                   <AccessTree
                     nodes={tree}
                     depth={0}
                     folderIds={folderIds}
                     screenIds={screenIds}
-                    onToggleFolder={toggleFolder}
-                    onToggleScreen={toggleScreen}
+                    onToggleFolder={(id, checked) => {
+                      const desc = collectDescendantIds(tree, id);
+                      setFolderIds((prev) => {
+                        const n = new Set(prev);
+                        if (checked) {
+                          n.add(id);
+                          for (const cid of desc.folderIds) n.add(cid);
+                        } else {
+                          n.delete(id);
+                          for (const cid of desc.folderIds) n.delete(cid);
+                        }
+                        return n;
+                      });
+                      setScreenIds((prev) => {
+                        const n = new Set(prev);
+                        if (checked) {
+                          for (const sid of desc.screenIds) n.add(sid);
+                        } else {
+                          for (const sid of desc.screenIds) n.delete(sid);
+                        }
+                        return n;
+                      });
+                    }}
+                    onToggleScreen={(id, checked) => {
+                      setScreenIds((prev) => {
+                        const n = new Set(prev);
+                        if (checked) n.add(id);
+                        else n.delete(id);
+                        return n;
+                      });
+                    }}
                   />
                 </ScrollArea>
               </div>
-            ) : null}
-            <Button type="button" onClick={() => void saveUser()}>
+            )}
+          </div>
+
+          <div className="flex justify-end border-t border-border/40 bg-muted/20 px-6 py-3.5">
+            <Button
+              type="button"
+              size="sm"
+              className="h-9 gap-1.5 rounded-full px-5"
+              onClick={() => void saveUser()}
+            >
               {t("accounts.save")}
             </Button>
           </div>

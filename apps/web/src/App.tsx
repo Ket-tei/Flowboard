@@ -7,6 +7,7 @@ import { DashboardPage } from "@/pages/DashboardPage";
 import { ScreensPage } from "@/pages/ScreensPage";
 import { AccountsPage } from "@/pages/AccountsPage";
 import { SettingsPage } from "@/pages/SettingsPage";
+import { BillingPage } from "@/pages/BillingPage";
 import { HelpPage } from "@/pages/HelpPage";
 import { ShowPage } from "@/pages/ShowPage";
 
@@ -43,6 +44,7 @@ export default function App() {
         <Route path="screens" element={<ScreensPage />} />
         <Route path="accounts" element={<AccountsPage />} />
         <Route path="settings" element={<SettingsPage />} />
+        <Route path="billing" element={<BillingPage />} />
         <Route path="help" element={<HelpPage />} />
       </Route>
       <Route path="/" element={<Navigate to="/app/dashboard" replace />} />

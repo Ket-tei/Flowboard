@@ -2,10 +2,10 @@ services:
   db:
     image: mariadb:11
     environment:
-      MYSQL_ROOT_PASSWORD: root
-      MYSQL_DATABASE: flowboard
-      MYSQL_USER: flowboard
-      MYSQL_PASSWORD: flowboard
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-flowboard}
+      MYSQL_USER: ${MYSQL_USER:-flowboard}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-flowboard}
     volumes:
       - mariadb_data:/var/lib/mysql
     ports:
@@ -24,12 +24,12 @@ services:
     ports:
       - "3001:3001"
     environment:
-      DATABASE_URL: mysql://flowboard:flowboard@db:3306/flowboard
-      JWT_SECRET: jdfvuhdfhjvbdsjfghdhfcoisdvjkhgiubndkjbvjdfbdjofhbjdgbjdfnxjgkhriutghoijoizeodpwsvsdnbmdfpgtisdhvusgrfgsrfvgvtfrfwasujvfbvlodlvpdlsfbijfdhgbhdsbvygtfrdarzsxdgdyvfibgdlpnfdjnbdhycgybftrsaqghdcsefdgbremgbpkfdgbudrhg
-      ADMIN_BOOTSTRAP_USERNAME: admin
-      ADMIN_BOOTSTRAP_PASSWORD: admin123
+      DATABASE_URL: mysql://${MYSQL_USER:-flowboard}:${MYSQL_PASSWORD:-flowboard}@db:3306/${MYSQL_DATABASE:-flowboard}
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET must be set}
+      ADMIN_BOOTSTRAP_USERNAME: ${ADMIN_BOOTSTRAP_USERNAME:?ADMIN_BOOTSTRAP_USERNAME must be set}
+      ADMIN_BOOTSTRAP_PASSWORD: ${ADMIN_BOOTSTRAP_PASSWORD:?ADMIN_BOOTSTRAP_PASSWORD must be set}
       UPLOAD_DIR: /data/uploads
-      CORS_ORIGIN: http://localhost,http://localhost:80,http://127.0.0.1,https://srv1296518.hstgr.cloud
+      CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost,http://localhost:80}
       PORT: 3001
       NODE_ENV: production
     volumes:
