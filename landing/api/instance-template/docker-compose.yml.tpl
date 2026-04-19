@@ -35,6 +35,8 @@ services:
       LANDING_API_URL: "{{LANDING_API_URL}}"
     volumes:
       - uploads_data:/data/uploads
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     depends_on:
       db:
         condition: service_healthy
