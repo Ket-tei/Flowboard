@@ -97,15 +97,26 @@ export async function provisionInstance({ slug, email, password, planId }) {
 }
 
 export async function deprovisionInstance({ slug }) {
+  const projectName = `fb-${slug}`;
   const instanceDir = path.join(INSTANCES_DIR, slug);
   const composePath = path.join(instanceDir, "docker-compose.yml");
 
+  // Stop containers under the fb-<slug> project name (used by update.sh and provisioner)
+  try {
+    await exec("docker", ["compose", "-p", projectName, "-f", composePath, "down", "-v"], {
+      cwd: instanceDir,
+    });
+  } catch (err) {
+    console.warn(`[deprovisioner] docker down (fb-) failed for ${slug}:`, err.message);
+  }
+
+  // Also stop any legacy containers under the bare slug project name
   try {
     await exec("docker", ["compose", "-f", composePath, "down", "-v"], {
       cwd: instanceDir,
     });
   } catch (err) {
-    console.warn(`[deprovisioner] docker down failed for ${slug}:`, err.message);
+    console.warn(`[deprovisioner] docker down (bare) failed for ${slug}:`, err.message);
   }
 
   const gatewayConf = path.join(GATEWAY_INSTANCES_DIR, `${slug}.conf`);
