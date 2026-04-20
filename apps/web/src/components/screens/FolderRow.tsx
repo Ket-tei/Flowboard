@@ -44,6 +44,7 @@ function ScreenItem({
     publicToken: screen.publicToken,
     revision: 0,
     sortOrder: 0,
+    displayMode: screen.displayMode ?? "QUICK",
     slideshowPath: `/show/${screen.publicToken}`,
   };
 

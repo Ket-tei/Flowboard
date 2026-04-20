@@ -13,6 +13,7 @@ import { registerAuthRoutes } from "./routes/auth.js";
 import { registerFolderRoutes } from "./routes/folders.js";
 import { registerPublicRoutes } from "./routes/public.js";
 import { registerScreenRoutes } from "./routes/screens.js";
+import { registerTemplateRoutes } from "./routes/templates.js";
 import { registerDashboardRoutes } from "./routes/dashboard.js";
 import { registerInstanceRoutes } from "./routes/instance.js";
 import { registerUserRoutes } from "./routes/users.js";
@@ -109,6 +110,7 @@ async function buildApp() {
       await scope.register(rateLimit, { max: 200, timeWindow: "1 minute" });
       await registerFolderRoutes(scope);
       await registerScreenRoutes(scope);
+      await registerTemplateRoutes(scope);
       await registerUserRoutes(scope);
       await registerAdminTreeRoutes(scope);
       await registerDashboardRoutes(scope);

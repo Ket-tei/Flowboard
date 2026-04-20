@@ -3,6 +3,7 @@ import { NavLink, Outlet, useLocation } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import {
   LayoutDashboard,
+  LayoutTemplate,
   MonitorPlay,
   Users,
   Settings,
@@ -26,6 +27,7 @@ import { Separator } from "@/components/ui/separator";
 const items = [
   { to: "/app/dashboard", key: "nav.dashboard", icon: LayoutDashboard, tutorial: "nav-dashboard" },
   { to: "/app/screens", key: "nav.screens", icon: MonitorPlay, tutorial: "nav-screens" },
+  { to: "/app/templates", key: "nav.templates", icon: LayoutTemplate, tutorial: "nav-templates" },
   { to: "/app/accounts", key: "nav.accounts", icon: Users, adminOnly: true, tutorial: "nav-accounts" },
   { to: "/app/billing", key: "nav.billing", icon: CreditCard, tutorial: "nav-billing" },
   { to: "/app/settings", key: "nav.settings", icon: Settings, tutorial: "nav-settings" },
@@ -80,6 +82,7 @@ export function AppLayout() {
   const sectionTitle = useMemo(() => {
     const p = location.pathname;
     if (p.startsWith("/app/screens")) return t("nav.screens");
+    if (p.startsWith("/app/templates")) return t("nav.templates");
     if (p.startsWith("/app/accounts")) return t("nav.accounts");
     if (p.startsWith("/app/settings")) return t("nav.settings");
     if (p.startsWith("/app/billing")) return t("nav.billing");

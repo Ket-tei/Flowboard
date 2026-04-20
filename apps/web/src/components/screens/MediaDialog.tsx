@@ -24,7 +24,50 @@ import {
 import { SortableMediaCard } from "./SortableMediaCard";
 import { MediaPlaceholder } from "./MediaPlaceholder";
 import type { ScreenRow, ScreenItem } from "@/types/screen.types";
+import type { LocalItem, PendingItem } from "@/hooks/useMediaDialog";
+import { isPendingItem } from "@/hooks/useMediaDialog";
 import type { DragEndEvent } from "@dnd-kit/core";
+
+function PendingMediaCard({
+  item,
+  onUpdateDuration,
+  onDelete,
+}: {
+  item: PendingItem;
+  onUpdateDuration: (id: string, ms: number) => void;
+  onDelete: (id: string) => void;
+}) {
+  const isVideo = item.file.type.startsWith("video/");
+  return (
+    <div className="relative flex shrink-0 flex-col gap-2 rounded-xl border border-dashed border-border/60 bg-muted/20 p-2 opacity-70 w-36">
+      <div className="flex h-24 items-center justify-center overflow-hidden rounded-lg bg-muted/40">
+        {isVideo ? (
+          <video src={item.previewUrl} className="h-full w-full object-cover" muted />
+        ) : (
+          <img src={item.previewUrl} alt="" className="h-full w-full object-cover" />
+        )}
+      </div>
+      <div className="flex items-center gap-1">
+        <input
+          type="number"
+          min={100}
+          step={500}
+          value={item.durationMs}
+          onChange={(e) => onUpdateDuration(item.localId, Number(e.target.value))}
+          className="h-7 w-full rounded-lg border border-border/60 bg-transparent px-2 text-xs focus:outline-none focus:ring-1 focus:ring-ring"
+        />
+        <span className="text-[10px] text-muted-foreground shrink-0">ms</span>
+      </div>
+      <button
+        type="button"
+        onClick={() => onDelete(item.localId)}
+        className="absolute right-1 top-1 flex size-5 items-center justify-center rounded-full bg-destructive/80 text-destructive-foreground text-xs hover:bg-destructive"
+      >
+        ✕
+      </button>
+    </div>
+  );
+}
 
 export function MediaDialog({
   screen,
@@ -32,7 +75,8 @@ export function MediaDialog({
   itemIds,
   fileInputRef,
   editedName,
-  hasNameChanged,
+  hasChanges,
+  saving,
   onClose,
   onDragEnd,
   onDeleteItem,
@@ -43,15 +87,16 @@ export function MediaDialog({
   onCopyUrl,
 }: {
   screen: ScreenRow | null;
-  items: ScreenItem[];
-  itemIds: number[];
+  items: LocalItem[];
+  itemIds: string[];
   fileInputRef: React.RefObject<HTMLInputElement | null>;
   editedName: string;
-  hasNameChanged: boolean;
+  hasChanges: boolean;
+  saving: boolean;
   onClose: () => void;
   onDragEnd: (e: DragEndEvent) => void;
-  onDeleteItem: (id: number) => void;
-  onUpdateDuration: (id: number, ms: number) => void;
+  onDeleteItem: (id: number | string) => void;
+  onUpdateDuration: (id: number | string, ms: number) => void;
   onUploadFiles: (files: FileList | File[]) => void;
   onEditName: (name: string) => void;
   onSave: () => void;
@@ -111,15 +156,24 @@ export function MediaDialog({
             >
               <SortableContext items={itemIds} strategy={horizontalListSortingStrategy}>
                 <div className="no-scrollbar flex min-h-0 flex-1 items-start gap-3 overflow-x-auto overflow-y-hidden bg-muted/5 px-8 py-4">
-                  {items.map((it) => (
-                    <SortableMediaCard
-                      key={it.id}
-                      item={it}
-                      token={screen.publicToken}
-                      onUpdateDuration={(id, ms) => void onUpdateDuration(id, ms)}
-                      onDelete={(id) => void onDeleteItem(id)}
-                    />
-                  ))}
+                  {items.map((it) =>
+                    isPendingItem(it) ? (
+                      <PendingMediaCard
+                        key={it.localId}
+                        item={it}
+                        onUpdateDuration={(id, ms) => onUpdateDuration(id, ms)}
+                        onDelete={(id) => onDeleteItem(id)}
+                      />
+                    ) : (
+                      <SortableMediaCard
+                        key={it.id}
+                        item={it as ScreenItem}
+                        token={screen.publicToken}
+                        onUpdateDuration={(id, ms) => void onUpdateDuration(id, ms)}
+                        onDelete={(id) => void onDeleteItem(id)}
+                      />
+                    )
+                  )}
                   <MediaPlaceholder
                     onFileSelect={() => fileInputRef.current?.click()}
                     onFileDrop={(files) => void onUploadFiles(files)}
@@ -133,11 +187,11 @@ export function MediaDialog({
               <Button
                 type="button"
                 className="h-10 gap-2 rounded-full px-6 text-sm font-medium"
-                disabled={!hasNameChanged}
+                disabled={!hasChanges || saving}
                 onClick={() => void onSave()}
               >
                 <Save className="size-4" />
-                {t("accounts.save")}
+                {saving ? t("common.loading") : t("accounts.save")}
               </Button>
             </div>
           </div>

@@ -20,7 +20,7 @@ export function SortableMediaCard({
   onDelete: (id: number) => void;
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
-    id: item.id,
+    id: String(item.id),
   });
   const style = { transform: CSS.Transform.toString(transform), transition };
   const src = apiUrl(`/api/public/screens/${token}/media/${item.id}`);

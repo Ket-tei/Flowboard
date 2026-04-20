@@ -9,6 +9,7 @@
     "section": "Navigation",
     "dashboard": "Tableau de bord",
     "screens": "Écrans",
+    "templates": "Modèles",
     "accounts": "Comptes",
     "settings": "Paramètres",
     "billing": "Facturation",
@@ -107,7 +108,39 @@
     "confirmDeleteFolder": "Ce dossier et tout son contenu seront supprimés : « {{name}} ».",
     "confirmDeleteScreen": "Cet écran sera supprimé : « {{name}} ».",
     "parentFolder": "Dossier parent",
-    "rootLevel": "Racine (aucun parent)"
+    "rootLevel": "Racine (aucun parent)",
+    "saved": "Modifications enregistrées",
+    "displayMode": "Mode d'affichage",
+    "modeQuick": "Affichage rapide",
+    "modeQuickDesc": "Diffuse directement les médias ajoutés à l'écran",
+    "modeTemplate": "Affichage par modèle",
+    "modeTemplateDesc": "Planifie des modèles sur un calendrier hebdomadaire"
+  },
+  "templates": {
+    "title": "Modèles",
+    "subtitle": "Créez et organisez des modèles de médias réutilisables.",
+    "addFolder": "Nouveau dossier",
+    "addTemplate": "Nouveau modèle",
+    "newDefault": "Nouveau modèle",
+    "noTemplates": "Aucun modèle créé",
+    "folderCreated": "Dossier créé",
+    "folderDeleted": "Dossier supprimé",
+    "created": "Modèle créé",
+    "deleted": "Modèle supprimé"
+  },
+  "schedule": {
+    "title": "Planning",
+    "save": "Enregistrer le planning",
+    "saved": "Planning enregistré",
+    "addSlot": "Ajouter un créneau",
+    "noSlots": "Aucun créneau",
+    "mon": "Lun",
+    "tue": "Mar",
+    "wed": "Mer",
+    "thu": "Jeu",
+    "fri": "Ven",
+    "sat": "Sam",
+    "sun": "Dim"
   },
   "accounts": {
     "edit": "Modifier",
@@ -133,7 +166,8 @@
     "noAccounts": "Aucun compte créé",
     "passwordHint": "Laisser vide pour ne pas modifier",
     "permissions": "Permissions",
-    "createdAt": "Créé le"
+    "createdAt": "Créé le",
+    "templateAccess": "Accès aux modèles"
   },
   "settings": {
     "subtitle": "Langue, thème et session.",

@@ -15,7 +15,7 @@ import type {
   UpdateItemInput,
 } from "../schemas/screen.schema.js";
 
-export async function createScreen(folderId: number, input: { name: string; sortOrder: number }) {
+export async function createScreen(folderId: number, input: { name: string; sortOrder: number }, displayMode: "QUICK" | "TEMPLATE" = "QUICK") {
   const f = await db.select().from(folders).where(eq(folders.id, folderId)).limit(1);
   if (!f[0]) throw new ScreenError("folder not found", 404);
   const publicToken = uuidv4();
@@ -25,6 +25,7 @@ export async function createScreen(folderId: number, input: { name: string; sort
     publicToken,
     sortOrder: input.sortOrder,
     revision: 0,
+    displayMode,
   });
   const [lid] = await pool.query("SELECT LAST_INSERT_ID() AS id");
   const id = Number((lid as { id: number }[])[0]?.id);
@@ -46,6 +47,7 @@ export async function getScreenDetail(screenId: number) {
       name: scr[0].name,
       publicToken: scr[0].publicToken,
       revision: scr[0].revision,
+      displayMode: scr[0].displayMode,
       slideshowPath: `/show/${scr[0].publicToken}`,
     },
     items: items.map((it) => ({

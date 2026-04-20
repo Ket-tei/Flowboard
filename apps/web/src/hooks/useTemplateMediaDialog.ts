@@ -5,25 +5,10 @@ import { arrayMove } from "@dnd-kit/sortable";
 import { toast } from "sonner";
 import { apiFetch } from "@/lib/api";
 import type { ScreenRow, ScreenItem } from "@/types/screen.types";
+import type { LocalItem, PendingItem } from "@/hooks/useMediaDialog";
+import { isPendingItem } from "@/hooks/useMediaDialog";
 
-export type PendingItem = {
-  localId: string;
-  file: File;
-  previewUrl: string;
-  durationMs: number;
-};
-
-export type LocalItem = ScreenItem | PendingItem;
-
-export function isPendingItem(item: LocalItem): item is PendingItem {
-  return "localId" in item;
-}
-
-function buildItemsApiBase(screenId: number): string {
-  return `/api/screens/${screenId}/items`;
-}
-
-export function useMediaDialog(onTreeChanged: () => Promise<void>) {
+export function useTemplateMediaDialog(onTreeChanged: () => Promise<void>) {
   const { t } = useTranslation();
   const [dialogScreen, setDialogScreen] = useState<ScreenRow | null>(null);
   const [localItems, setLocalItems] = useState<LocalItem[]>([]);
@@ -56,7 +41,7 @@ export function useMediaDialog(onTreeChanged: () => Promise<void>) {
     setOriginalItems([]);
     setEditedName(s.name);
     setOriginalName(s.name);
-    const r = await apiFetch<{ screen: ScreenRow; items: ScreenItem[] }>(`/api/screens/${s.id}`);
+    const r = await apiFetch<{ screen: ScreenRow; items: ScreenItem[] }>(`/api/templates/${s.id}`);
     const sorted = r.items.sort((a, b) => a.sortOrder - b.sortOrder || a.id - b.id);
     setDialogScreen(r.screen);
     setLocalItems(sorted);
@@ -66,7 +51,6 @@ export function useMediaDialog(onTreeChanged: () => Promise<void>) {
   }, []);
 
   function closeDialog() {
-    // Revoke any pending preview URLs
     setLocalItems((prev) => {
       for (const it of prev) {
         if (isPendingItem(it)) URL.revokeObjectURL(it.previewUrl);
@@ -119,10 +103,9 @@ export function useMediaDialog(onTreeChanged: () => Promise<void>) {
     if (!dialogScreen) return;
     setSaving(true);
     try {
-      const screenId = dialogScreen.id;
-      const base = buildItemsApiBase(screenId);
+      const templateId = dialogScreen.id;
+      const base = `/api/templates/${templateId}/items`;
 
-      // 1. Upload pending files → replace pending items with real items
       const uploadedMap = new Map<string, ScreenItem>();
       for (const it of localItems) {
         if (!isPendingItem(it)) continue;
@@ -135,7 +118,6 @@ export function useMediaDialog(onTreeChanged: () => Promise<void>) {
         uploadedMap.set(it.localId, { ...created, durationMs: it.durationMs });
       }
 
-      // Resolve final list of real items in current order
       const finalItems: ScreenItem[] = localItems
         .map((it) => {
           if (isPendingItem(it)) return uploadedMap.get(it.localId) ?? null;
@@ -143,7 +125,6 @@ export function useMediaDialog(onTreeChanged: () => Promise<void>) {
         })
         .filter((it): it is ScreenItem => it !== null);
 
-      // 2. Delete items removed by user
       const finalIds = new Set(finalItems.map((i) => i.id));
       for (const orig of originalItems) {
         if (!finalIds.has(orig.id)) {
@@ -151,7 +132,6 @@ export function useMediaDialog(onTreeChanged: () => Promise<void>) {
         }
       }
 
-      // 3. Update durations that changed (only for original items)
       const origDurMap = new Map(originalItems.map((i) => [i.id, i.durationMs]));
       for (const it of finalItems) {
         if (origDurMap.has(it.id) && origDurMap.get(it.id) !== it.durationMs) {
@@ -162,7 +142,6 @@ export function useMediaDialog(onTreeChanged: () => Promise<void>) {
         }
       }
 
-      // 4. Reorder if needed
       if (finalItems.length > 0) {
         await apiFetch(`${base}/order`, {
           method: "PATCH",
@@ -170,10 +149,9 @@ export function useMediaDialog(onTreeChanged: () => Promise<void>) {
         });
       }
 
-      // 5. Save name if changed
       const trimmed = editedName.trim();
       if (trimmed && trimmed !== originalName) {
-        await apiFetch(`/api/screens/${screenId}`, {
+        await apiFetch(`/api/templates/${templateId}`, {
           method: "PATCH",
           body: JSON.stringify({ name: trimmed }),
         });
@@ -184,8 +162,7 @@ export function useMediaDialog(onTreeChanged: () => Promise<void>) {
       toast.success(t("screens.saved"));
       await onTreeChanged();
 
-      // Reload fresh state
-      const r = await apiFetch<{ screen: ScreenRow; items: ScreenItem[] }>(`/api/screens/${screenId}`);
+      const r = await apiFetch<{ screen: ScreenRow; items: ScreenItem[] }>(`/api/templates/${templateId}`);
       const sorted = r.items.sort((a, b) => a.sortOrder - b.sortOrder || a.id - b.id);
       setDialogScreen(r.screen);
       setLocalItems(sorted);

@@ -58,6 +58,7 @@ export function AccountsPage() {
   const { user } = useAuth();
   const [users, setUsers] = useState<UserRow[]>([]);
   const [tree, setTree] = useState<TreeFolder[]>([]);
+  const [templateTree, setTemplateTree] = useState<TreeFolder[]>([]);
   const [loadingUsers, setLoadingUsers] = useState(true);
   const [open, setOpen] = useState(false);
   const [editId, setEditId] = useState<number | null>(null);
@@ -66,6 +67,8 @@ export function AccountsPage() {
   const [role, setRole] = useState<"ADMIN" | "USER">("USER");
   const [folderIds, setFolderIds] = useState<Set<number>>(() => new Set());
   const [screenIds, setScreenIds] = useState<Set<number>>(() => new Set());
+  const [templateFolderIds, setTemplateFolderIds] = useState<Set<number>>(() => new Set());
+  const [templateIds, setTemplateIds] = useState<Set<number>>(() => new Set());
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [confirmUser, setConfirmUser] = useState<UserRow | null>(null);
 
@@ -76,8 +79,12 @@ export function AccountsPage() {
   }, []);
 
   const loadTree = useCallback(async () => {
-    const r = await apiFetch<{ tree: TreeFolder[] }>("/api/admin/folder-screen-tree");
-    setTree(r.tree);
+    const [screenRes, tplRes] = await Promise.all([
+      apiFetch<{ tree: TreeFolder[] }>("/api/admin/folder-screen-tree"),
+      apiFetch<{ tree: TreeFolder[] }>("/api/admin/template-folder-tree"),
+    ]);
+    setTree(screenRes.tree);
+    setTemplateTree(tplRes.tree);
   }, []);
 
   useEffect(() => {
@@ -96,6 +103,8 @@ export function AccountsPage() {
     setRole("USER");
     setFolderIds(new Set());
     setScreenIds(new Set());
+    setTemplateFolderIds(new Set());
+    setTemplateIds(new Set());
   }
 
   function openCreate() {
@@ -110,11 +119,16 @@ export function AccountsPage() {
     setRole(u.role);
     setPassword("");
     if (u.role === "USER") {
-      const a = await apiFetch<{ folderIds: number[]; screenIds: number[] }>(
-        `/api/users/${u.id}/access`
-      );
+      const a = await apiFetch<{
+        folderIds: number[];
+        screenIds: number[];
+        templateFolderIds: number[];
+        templateIds: number[];
+      }>(`/api/users/${u.id}/access`);
       setFolderIds(new Set(a.folderIds));
       setScreenIds(new Set(a.screenIds));
+      setTemplateFolderIds(new Set(a.templateFolderIds ?? []));
+      setTemplateIds(new Set(a.templateIds ?? []));
     }
     setOpen(true);
   }
@@ -133,6 +147,8 @@ export function AccountsPage() {
           role,
           folderIds: role === "USER" ? [...folderIds] : [],
           screenIds: role === "USER" ? [...screenIds] : [],
+          templateFolderIds: role === "USER" ? [...templateFolderIds] : [],
+          templateIds: role === "USER" ? [...templateIds] : [],
         }),
       });
       toast.success(t("accounts.created"));
@@ -143,6 +159,8 @@ export function AccountsPage() {
       if (role === "USER") {
         body.folderIds = [...folderIds];
         body.screenIds = [...screenIds];
+        body.templateFolderIds = [...templateFolderIds];
+        body.templateIds = [...templateIds];
       }
       await apiFetch(`/api/users/${editId}`, {
         method: "PATCH",
@@ -378,50 +396,101 @@ export function AccountsPage() {
             </div>
 
             {role === "USER" && (
-              <div className="space-y-1.5">
-                <Label className="text-xs font-medium text-muted-foreground">
-                  {t("accounts.permissions")}
-                </Label>
-                <ScrollArea className="h-48 rounded-xl border border-border/60 bg-muted/20 p-3">
-                  <AccessTree
-                    nodes={tree}
-                    depth={0}
-                    folderIds={folderIds}
-                    screenIds={screenIds}
-                    onToggleFolder={(id, checked) => {
-                      const desc = collectDescendantIds(tree, id);
-                      setFolderIds((prev) => {
-                        const n = new Set(prev);
-                        if (checked) {
-                          n.add(id);
-                          for (const cid of desc.folderIds) n.add(cid);
-                        } else {
-                          n.delete(id);
-                          for (const cid of desc.folderIds) n.delete(cid);
-                        }
-                        return n;
-                      });
-                      setScreenIds((prev) => {
-                        const n = new Set(prev);
-                        if (checked) {
-                          for (const sid of desc.screenIds) n.add(sid);
-                        } else {
-                          for (const sid of desc.screenIds) n.delete(sid);
-                        }
-                        return n;
-                      });
-                    }}
-                    onToggleScreen={(id, checked) => {
-                      setScreenIds((prev) => {
-                        const n = new Set(prev);
-                        if (checked) n.add(id);
-                        else n.delete(id);
-                        return n;
-                      });
-                    }}
-                  />
-                </ScrollArea>
-              </div>
+              <>
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-medium text-muted-foreground">
+                    {t("accounts.permissions")}
+                  </Label>
+                  <ScrollArea className="h-48 rounded-xl border border-border/60 bg-muted/20 p-3">
+                    <AccessTree
+                      nodes={tree}
+                      depth={0}
+                      folderIds={folderIds}
+                      screenIds={screenIds}
+                      onToggleFolder={(id, checked) => {
+                        const desc = collectDescendantIds(tree, id);
+                        setFolderIds((prev) => {
+                          const n = new Set(prev);
+                          if (checked) {
+                            n.add(id);
+                            for (const cid of desc.folderIds) n.add(cid);
+                          } else {
+                            n.delete(id);
+                            for (const cid of desc.folderIds) n.delete(cid);
+                          }
+                          return n;
+                        });
+                        setScreenIds((prev) => {
+                          const n = new Set(prev);
+                          if (checked) {
+                            for (const sid of desc.screenIds) n.add(sid);
+                          } else {
+                            for (const sid of desc.screenIds) n.delete(sid);
+                          }
+                          return n;
+                        });
+                      }}
+                      onToggleScreen={(id, checked) => {
+                        setScreenIds((prev) => {
+                          const n = new Set(prev);
+                          if (checked) n.add(id);
+                          else n.delete(id);
+                          return n;
+                        });
+                      }}
+                    />
+                  </ScrollArea>
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-medium text-muted-foreground">
+                    {t("accounts.templateAccess")}
+                  </Label>
+                  <ScrollArea className="h-48 rounded-xl border border-border/60 bg-muted/20 p-3">
+                    {templateTree.length === 0 ? (
+                      <p className="text-xs text-muted-foreground py-2">{t("templates.noTemplates")}</p>
+                    ) : (
+                      <AccessTree
+                        nodes={templateTree}
+                        depth={0}
+                        folderIds={templateFolderIds}
+                        screenIds={templateIds}
+                        onToggleFolder={(id, checked) => {
+                          const desc = collectDescendantIds(templateTree, id);
+                          setTemplateFolderIds((prev) => {
+                            const n = new Set(prev);
+                            if (checked) {
+                              n.add(id);
+                              for (const cid of desc.folderIds) n.add(cid);
+                            } else {
+                              n.delete(id);
+                              for (const cid of desc.folderIds) n.delete(cid);
+                            }
+                            return n;
+                          });
+                          setTemplateIds((prev) => {
+                            const n = new Set(prev);
+                            if (checked) {
+                              for (const sid of desc.screenIds) n.add(sid);
+                            } else {
+                              for (const sid of desc.screenIds) n.delete(sid);
+                            }
+                            return n;
+                          });
+                        }}
+                        onToggleScreen={(id, checked) => {
+                          setTemplateIds((prev) => {
+                            const n = new Set(prev);
+                            if (checked) n.add(id);
+                            else n.delete(id);
+                            return n;
+                          });
+                        }}
+                      />
+                    )}
+                  </ScrollArea>
+                </div>
+              </>
             )}
           </div>
 

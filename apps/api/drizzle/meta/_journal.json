@@ -15,6 +15,13 @@
       "when": 1744588800000,
       "tag": "0001_dashboard_layouts",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "5",
+      "when": 1776711268482,
+      "tag": "0002_0002_templates_schedules",
+      "breakpoints": true
     }
   ]
 }

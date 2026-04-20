@@ -5,6 +5,7 @@ export type ScreenRow = {
   publicToken: string;
   revision: number;
   sortOrder: number;
+  displayMode: "QUICK" | "TEMPLATE";
   slideshowPath: string;
 };
 

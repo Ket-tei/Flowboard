@@ -2,6 +2,7 @@ export type TreeScreen = {
   id: number;
   name: string;
   publicToken: string;
+  displayMode?: "QUICK" | "TEMPLATE";
 };
 
 export type TreeFolder = {

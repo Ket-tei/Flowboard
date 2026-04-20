@@ -1,4 +1,5 @@
 import type { FastifyInstance } from "fastify";
+import { and, eq, lte, gt } from "drizzle-orm";
 import { canAccessScreen } from "../services/access.service.js";
 import {
   createScreen,
@@ -18,13 +19,18 @@ import {
   reorderItemsSchema,
   updateItemSchema,
 } from "../schemas/screen.schema.js";
+import { db } from "../db/index.js";
+import { screenSchedules, screens } from "../db/schema.js";
+import { sql } from "drizzle-orm";
 
 export async function registerScreenRoutes(app: FastifyInstance) {
   app.post("/folders/:folderId/screens", { preHandler: adminPreHandler }, async (request, reply) => {
     const folderId = Number((request.params as { folderId: string }).folderId);
     if (!Number.isFinite(folderId)) return reply.status(400).send({ error: "invalid folder" });
     const input = validate(createScreenSchema, request.body);
-    return createScreen(folderId, input);
+    const body = request.body as { displayMode?: string };
+    const displayMode = body.displayMode === "TEMPLATE" ? "TEMPLATE" : "QUICK";
+    return createScreen(folderId, input, displayMode);
   });
 
   app.get("/screens/:id", { preHandler: authPreHandler }, async (request, reply) => {
@@ -108,6 +114,38 @@ export async function registerScreenRoutes(app: FastifyInstance) {
       return reply.status(403).send({ error: "Forbidden" });
     }
     await deleteItem(screenId, itemId);
+    return { ok: true };
+  });
+
+  app.get("/screens/:id/schedule", { preHandler: authPreHandler }, async (request, reply) => {
+    const u = request.authUser!;
+    const screenId = Number((request.params as { id: string }).id);
+    if (!Number.isFinite(screenId)) return reply.status(400).send({ error: "invalid id" });
+    if (!(await canAccessScreen(u.sub, u.role, screenId))) {
+      return reply.status(403).send({ error: "Forbidden" });
+    }
+    const slots = await db.select().from(screenSchedules).where(eq(screenSchedules.screenId, screenId));
+    return { slots };
+  });
+
+  app.put("/screens/:id/schedule", { preHandler: adminPreHandler }, async (request, reply) => {
+    const screenId = Number((request.params as { id: string }).id);
+    if (!Number.isFinite(screenId)) return reply.status(400).send({ error: "invalid id" });
+    const body = request.body as { slots: Array<{ dayOfWeek: number; startTime: string; endTime: string; templateId: number }> };
+    if (!Array.isArray(body?.slots)) return reply.status(400).send({ error: "slots array required" });
+    await db.delete(screenSchedules).where(eq(screenSchedules.screenId, screenId));
+    if (body.slots.length > 0) {
+      await db.insert(screenSchedules).values(
+        body.slots.map((s) => ({
+          screenId,
+          dayOfWeek: s.dayOfWeek,
+          startTime: s.startTime,
+          endTime: s.endTime,
+          templateId: s.templateId,
+        }))
+      );
+    }
+    await db.update(screens).set({ revision: sql`${screens.revision} + 1` }).where(eq(screens.id, screenId));
     return { ok: true };
   });
 }

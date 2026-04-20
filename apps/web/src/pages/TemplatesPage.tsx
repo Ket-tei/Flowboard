@@ -1,11 +1,10 @@
 import { useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { CalendarDays, FolderPlus, MonitorPlay, Plus } from "lucide-react";
-import { useScreenTree } from "@/hooks/useScreenTree";
-import { useMediaDialog } from "@/hooks/useMediaDialog";
+import { FolderPlus, LayoutTemplate, Plus } from "lucide-react";
+import { useTemplateTree } from "@/hooks/useTemplateTree";
+import { useTemplateMediaDialog } from "@/hooks/useTemplateMediaDialog";
 import { FolderRow } from "@/components/screens/FolderRow";
 import { MediaDialog } from "@/components/screens/MediaDialog";
-import { ScheduleDialog } from "@/components/screens/ScheduleDialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -33,7 +32,6 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import type { TreeFolder } from "@/types/tree.types";
-import type { ScreenRow } from "@/types/screen.types";
 
 type FlatFolder = { id: number; name: string; depth: number };
 
@@ -50,19 +48,17 @@ type CreateState = {
   kind: "folder" | "screen";
   parentFolderId: string;
   name: string;
-  displayMode: "QUICK" | "TEMPLATE";
   busy: boolean;
 };
 
-export function ScreensPage() {
+export function TemplatesPage() {
   const { t } = useTranslation();
-  const tree = useScreenTree();
-  const media = useMediaDialog(tree.loadTree);
+  const tree = useTemplateTree();
+  const media = useTemplateMediaDialog(tree.loadTree);
 
   const pendingInputRef = useRef<HTMLInputElement | null>(null);
   const [createOpen, setCreateOpen] = useState(false);
   const [createState, setCreateState] = useState<CreateState | null>(null);
-  const [scheduleScreen, setScheduleScreen] = useState<ScreenRow | null>(null);
 
   const [confirmOpen, setConfirmOpen] = useState(false);
   const confirmRef = useRef<{ type: "folder" | "screen"; id: number; label: string } | null>(null);
@@ -82,8 +78,7 @@ export function ScreensPage() {
     setCreateState({
       kind,
       parentFolderId: parentVal,
-      name: kind === "folder" ? "" : t("screens.newScreenDefault"),
-      displayMode: "QUICK",
+      name: kind === "folder" ? "" : t("templates.newDefault"),
       busy: false,
     });
     setCreateOpen(true);
@@ -111,17 +106,10 @@ export function ScreensPage() {
     } else {
       setCreateState((p) => (p ? { ...p, busy: true } : p));
       try {
-        const mode = createState.displayMode;
-        const created = await tree.createScreen(parentId, mode);
+        const created = await tree.createScreen(parentId);
         setCreateOpen(false);
         setCreateState(null);
-        if (created) {
-          if (mode === "TEMPLATE") {
-            setScheduleScreen(created);
-          } else {
-            await media.openDialog(created);
-          }
-        }
+        if (created) await media.openDialog(created);
       } finally {
         setCreateState((p) => (p ? { ...p, busy: false } : p));
       }
@@ -141,14 +129,6 @@ export function ScreensPage() {
     confirmRef.current = null;
   }
 
-  function handleOpenDialog(s: ScreenRow) {
-    if (s.displayMode === "TEMPLATE") {
-      setScheduleScreen(s);
-    } else {
-      void media.openDialog(s);
-    }
-  }
-
   if (tree.loading) {
     return (
       <div className="space-y-4">
@@ -165,11 +145,11 @@ export function ScreensPage() {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="flex size-10 items-center justify-center rounded-xl bg-primary/10">
-              <MonitorPlay className="size-5 text-primary" />
+              <LayoutTemplate className="size-5 text-primary" />
             </div>
             <div>
-              <p className="text-base font-semibold">{t("screens.title")}</p>
-              <p className="text-xs text-muted-foreground">{t("screens.subtitle")}</p>
+              <p className="text-base font-semibold">{t("templates.title")}</p>
+              <p className="text-xs text-muted-foreground">{t("templates.subtitle")}</p>
             </div>
           </div>
           {tree.isAdmin && (
@@ -182,7 +162,7 @@ export function ScreensPage() {
                 onClick={() => openCreateDialog("folder", null)}
               >
                 <FolderPlus className="size-3.5" />
-                {t("screens.addFolder")}
+                {t("templates.addFolder")}
               </Button>
               <Button
                 type="button"
@@ -191,7 +171,7 @@ export function ScreensPage() {
                 onClick={() => openCreateDialog("screen", null)}
               >
                 <Plus className="size-3.5" />
-                {t("screens.addScreen")}
+                {t("templates.addTemplate")}
               </Button>
             </div>
           )}
@@ -205,9 +185,9 @@ export function ScreensPage() {
             {tree.tree.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-12 text-center">
                 <div className="flex size-12 items-center justify-center rounded-2xl bg-muted/80 mb-3">
-                  <MonitorPlay className="size-5 text-muted-foreground" />
+                  <LayoutTemplate className="size-5 text-muted-foreground" />
                 </div>
-                <p className="text-sm text-muted-foreground">{t("screens.rootEmpty")}</p>
+                <p className="text-sm text-muted-foreground">{t("templates.noTemplates")}</p>
               </div>
             ) : (
               <div className="select-none">
@@ -228,8 +208,8 @@ export function ScreensPage() {
                       tree.setSelectedScreenId(screenId);
                       tree.setSelectedFolderId(folderId);
                     }}
-                    onOpenDialog={handleOpenDialog}
-                    onCopyUrl={(token) => void tree.copyUrl(token)}
+                    onOpenDialog={(s) => void media.openDialog(s)}
+                    onCopyUrl={() => undefined}
                     onDragStart={tree.onDragStart}
                     onDropOnFolder={(e, folderId) => void tree.onDropOnFolder(e, folderId)}
                     onCreateFolder={(parentId) => openCreateDialog("folder", parentId)}
@@ -243,17 +223,17 @@ export function ScreensPage() {
           {tree.isAdmin && (
             <ContextMenuContent className="rounded-xl">
               <ContextMenuItem className="rounded-lg" onSelect={() => openCreateDialog("folder", null)}>
-                {t("screens.addFolder")}
+                {t("templates.addFolder")}
               </ContextMenuItem>
               <ContextMenuItem className="rounded-lg" onSelect={() => openCreateDialog("screen", null)}>
-                {t("screens.addScreen")}
+                {t("templates.addTemplate")}
               </ContextMenuItem>
             </ContextMenuContent>
           )}
         </ContextMenu>
       </div>
 
-      {/* Create folder/screen dialog */}
+      {/* Create folder/template dialog */}
       <Dialog
         open={createOpen}
         onOpenChange={(o) => {
@@ -264,7 +244,7 @@ export function ScreensPage() {
         <DialogContent className="max-w-md overflow-hidden rounded-2xl border-border/60 p-0 sm:max-w-md">
           <DialogHeader className="border-b border-border/40 px-6 py-4">
             <DialogTitle className="text-base">
-              {createState?.kind === "screen" ? t("screens.addScreen") : t("screens.addFolder")}
+              {createState?.kind === "screen" ? t("templates.addTemplate") : t("templates.addFolder")}
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-4 px-6 py-5">
@@ -284,42 +264,6 @@ export function ScreensPage() {
                   }}
                   disabled={createState?.busy === true}
                 />
-              </div>
-            )}
-            {createState?.kind === "screen" && (
-              <div className="space-y-1.5">
-                <Label className="text-xs font-medium text-muted-foreground">
-                  {t("screens.displayMode")}
-                </Label>
-                <div className="grid grid-cols-2 gap-3">
-                  {(["QUICK", "TEMPLATE"] as const).map((mode) => (
-                    <button
-                      key={mode}
-                      type="button"
-                      disabled={createState?.busy === true}
-                      onClick={() => setCreateState((p) => (p ? { ...p, displayMode: mode } : p))}
-                      className={`flex flex-col items-start gap-2 rounded-xl border p-3 text-left transition-all ${
-                        createState?.displayMode === mode
-                          ? "border-primary ring-2 ring-primary bg-primary/5"
-                          : "border-border/60 hover:border-border"
-                      }`}
-                    >
-                      {mode === "QUICK" ? (
-                        <MonitorPlay className="size-4 text-primary" />
-                      ) : (
-                        <CalendarDays className="size-4 text-primary" />
-                      )}
-                      <div>
-                        <p className="text-xs font-semibold">
-                          {mode === "QUICK" ? t("screens.modeQuick") : t("screens.modeTemplate")}
-                        </p>
-                        <p className="text-[11px] text-muted-foreground leading-tight mt-0.5">
-                          {mode === "QUICK" ? t("screens.modeQuickDesc") : t("screens.modeTemplateDesc")}
-                        </p>
-                      </div>
-                    </button>
-                  ))}
-                </div>
               </div>
             )}
             <div className="space-y-1.5">
@@ -409,11 +353,7 @@ export function ScreensPage() {
         onUploadFiles={(files) => void media.uploadFiles(files)}
         onEditName={media.setEditedName}
         onSave={() => void media.saveChanges()}
-        onCopyUrl={(token) => void tree.copyUrl(token)}
-      />
-      <ScheduleDialog
-        screen={scheduleScreen}
-        onClose={() => setScheduleScreen(null)}
+        onCopyUrl={() => undefined}
       />
     </div>
   );

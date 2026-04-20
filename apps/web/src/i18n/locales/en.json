@@ -9,6 +9,7 @@
     "section": "Navigation",
     "dashboard": "Dashboard",
     "screens": "Screens",
+    "templates": "Templates",
     "accounts": "Accounts",
     "settings": "Settings",
     "billing": "Billing",
@@ -107,7 +108,39 @@
     "confirmDeleteFolder": "This folder and all its contents will be deleted: \"{{name}}\".",
     "confirmDeleteScreen": "This screen will be deleted: \"{{name}}\".",
     "parentFolder": "Parent folder",
-    "rootLevel": "Root (no parent)"
+    "rootLevel": "Root (no parent)",
+    "saved": "Changes saved",
+    "displayMode": "Display mode",
+    "modeQuick": "Quick display",
+    "modeQuickDesc": "Directly plays media added to the screen",
+    "modeTemplate": "Template display",
+    "modeTemplateDesc": "Schedules templates on a weekly calendar"
+  },
+  "templates": {
+    "title": "Templates",
+    "subtitle": "Create and organize reusable media templates.",
+    "addFolder": "New folder",
+    "addTemplate": "New template",
+    "newDefault": "New template",
+    "noTemplates": "No templates created",
+    "folderCreated": "Folder created",
+    "folderDeleted": "Folder deleted",
+    "created": "Template created",
+    "deleted": "Template deleted"
+  },
+  "schedule": {
+    "title": "Schedule",
+    "save": "Save schedule",
+    "saved": "Schedule saved",
+    "addSlot": "Add slot",
+    "noSlots": "No slots",
+    "mon": "Mon",
+    "tue": "Tue",
+    "wed": "Wed",
+    "thu": "Thu",
+    "fri": "Fri",
+    "sat": "Sat",
+    "sun": "Sun"
   },
   "accounts": {
     "edit": "Edit",
@@ -133,7 +166,8 @@
     "noAccounts": "No accounts created",
     "passwordHint": "Leave empty to keep unchanged",
     "permissions": "Permissions",
-    "createdAt": "Created on"
+    "createdAt": "Created on",
+    "templateAccess": "Template access"
   },
   "settings": {
     "subtitle": "Language, theme, and session.",

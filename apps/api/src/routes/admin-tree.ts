@@ -23,6 +23,7 @@ function buildTree(
         id: s.id,
         name: s.name,
         publicToken: s.publicToken,
+        displayMode: s.displayMode,
       })),
       children: buildTree(folderRows, screensByFolder, r.id),
     }));

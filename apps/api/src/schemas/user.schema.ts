@@ -6,6 +6,8 @@ export const createUserSchema = z.object({
   role: z.enum(["ADMIN", "USER"]).default("USER"),
   folderIds: z.array(z.number().int().positive()).default([]),
   screenIds: z.array(z.number().int().positive()).default([]),
+  templateFolderIds: z.array(z.number().int().positive()).default([]),
+  templateIds: z.array(z.number().int().positive()).default([]),
 });
 
 export const updateUserSchema = z.object({
@@ -13,6 +15,8 @@ export const updateUserSchema = z.object({
   role: z.enum(["ADMIN", "USER"]).optional(),
   folderIds: z.array(z.number().int().positive()).optional(),
   screenIds: z.array(z.number().int().positive()).optional(),
+  templateFolderIds: z.array(z.number().int().positive()).optional(),
+  templateIds: z.array(z.number().int().positive()).optional(),
 });
 
 export type CreateUserInput = z.output<typeof createUserSchema>;

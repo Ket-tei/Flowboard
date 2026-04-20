@@ -10,7 +10,7 @@ type DragPayload =
   | { type: "folder"; id: number }
   | { type: "screen"; id: number };
 
-export function useScreenTree() {
+export function useTemplateTree() {
   const { t } = useTranslation();
   const { user } = useAuth();
   const isAdmin = user?.role === "ADMIN";
@@ -21,15 +21,14 @@ export function useScreenTree() {
   const [loading, setLoading] = useState(true);
 
   const loadTree = useCallback(async () => {
-    const r = await apiFetch<{ tree: TreeFolder[] }>("/api/admin/folder-screen-tree");
+    const r = await apiFetch<{ tree: TreeFolder[] }>("/api/template-folders/tree");
     setTree(r.tree);
     setLoading(false);
   }, []);
 
   useEffect(() => {
-    if (!isAdmin) return;
     void loadTree();
-  }, [isAdmin, loadTree]);
+  }, [loadTree]);
 
   useEffect(() => {
     if (tree.length === 0) return;
@@ -50,15 +49,6 @@ export function useScreenTree() {
     });
   }
 
-  function fullSlideshowUrl(token: string) {
-    return `${window.location.origin}/show/${token}`;
-  }
-
-  async function copyUrl(token: string) {
-    await navigator.clipboard.writeText(fullSlideshowUrl(token));
-    toast.success(t("screens.copied"));
-  }
-
   function pickTargetFolderId(explicit: number | null): number | null {
     if (explicit != null) return explicit;
     if (selectedFolderId != null) return selectedFolderId;
@@ -66,15 +56,15 @@ export function useScreenTree() {
   }
 
   async function createFolder(name: string, parentFolderId: number | null) {
-    await apiFetch<{ id: number }>("/api/folders", {
+    await apiFetch<{ id: number }>("/api/template-folders", {
       method: "POST",
       body: JSON.stringify({ name, parentId: parentFolderId }),
     });
-    toast.success(t("screens.folderCreated"));
+    toast.success(t("templates.folderCreated"));
     await loadTree();
   }
 
-  async function createScreen(parentFolderId: number | null, displayMode: "QUICK" | "TEMPLATE" = "QUICK"): Promise<ScreenRow | null> {
+  async function createScreen(parentFolderId: number | null): Promise<ScreenRow | null> {
     const parent = pickTargetFolderId(parentFolderId);
     if (parent == null) {
       toast.error(t("screens.noFolder"));
@@ -82,31 +72,31 @@ export function useScreenTree() {
     }
     setSelectedFolderId(parent);
     setExpanded((prev) => new Set(prev).add(parent));
-    const created = await apiFetch<{ id: number; publicToken: string; slideshowPath: string }>(
-      `/api/folders/${parent}/screens`,
-      { method: "POST", body: JSON.stringify({ name: t("screens.newScreenDefault"), displayMode }) }
+    const created = await apiFetch<{ id: number }>(
+      `/api/template-folders/${parent}/templates`,
+      { method: "POST", body: JSON.stringify({ name: t("templates.newDefault") }) }
     );
-    toast.success(t("screens.screenCreated"));
+    toast.success(t("templates.created"));
     await loadTree();
     return {
       id: created.id,
       folderId: parent,
-      name: t("screens.newScreenDefault"),
-      publicToken: created.publicToken,
+      name: t("templates.newDefault"),
+      publicToken: `tpl-${created.id}`,
       revision: 0,
       sortOrder: 0,
-      displayMode,
-      slideshowPath: created.slideshowPath,
+      displayMode: "QUICK",
+      slideshowPath: "",
     };
   }
 
   async function deleteNode(type: "folder" | "screen", id: number) {
     if (type === "folder") {
-      await apiFetch(`/api/folders/${id}`, { method: "DELETE" });
-      toast.success(t("screens.folderDeleted"));
+      await apiFetch(`/api/template-folders/${id}`, { method: "DELETE" });
+      toast.success(t("templates.folderDeleted"));
     } else {
-      await apiFetch(`/api/screens/${id}`, { method: "DELETE" });
-      toast.success(t("screens.screenDeleted"));
+      await apiFetch(`/api/templates/${id}`, { method: "DELETE" });
+      toast.success(t("templates.deleted"));
     }
     await loadTree();
   }
@@ -130,20 +120,24 @@ export function useScreenTree() {
     if (!p || typeof p !== "object") return;
     if (p.type === "folder") {
       if (p.id === folderId) return;
-      await apiFetch(`/api/folders/${p.id}`, {
+      await apiFetch(`/api/template-folders/${p.id}`, {
         method: "PATCH",
         body: JSON.stringify({ parentId: folderId }),
       });
       toast.success(t("screens.folderMoved"));
       await loadTree();
     } else if (p.type === "screen") {
-      await apiFetch(`/api/screens/${p.id}`, {
+      await apiFetch(`/api/templates/${p.id}`, {
         method: "PATCH",
         body: JSON.stringify({ folderId }),
       });
       toast.success(t("screens.screenMoved"));
       await loadTree();
     }
+  }
+
+  function copyUrl(_token: string) {
+    return Promise.resolve();
   }
 
   return {

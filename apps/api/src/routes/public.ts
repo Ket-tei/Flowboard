@@ -1,9 +1,9 @@
 import type { FastifyInstance } from "fastify";
 import { createReadStream } from "node:fs";
 import { stat } from "node:fs/promises";
-import { eq, and } from "drizzle-orm";
+import { eq, and, lte, gt } from "drizzle-orm";
 import { db } from "../db/index.js";
-import { screenItems, screens } from "../db/schema.js";
+import { screenItems, screens, screenSchedules, templateItems } from "../db/schema.js";
 import { resolveFilePath } from "../services/upload.service.js";
 
 export async function registerPublicRoutes(app: FastifyInstance) {
@@ -17,6 +17,44 @@ export async function registerPublicRoutes(app: FastifyInstance) {
     if (!scr[0]) {
       return reply.status(404).send({ error: "not found" });
     }
+
+    if (scr[0].displayMode === "TEMPLATE") {
+      const now = new Date();
+      const dow = now.getDay();
+      const hhmm = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
+      const slot = await db
+        .select()
+        .from(screenSchedules)
+        .where(
+          and(
+            eq(screenSchedules.screenId, scr[0].id),
+            eq(screenSchedules.dayOfWeek, dow),
+            lte(screenSchedules.startTime, hhmm),
+            gt(screenSchedules.endTime, hhmm)
+          )
+        )
+        .limit(1);
+      if (!slot[0]) {
+        return { revision: scr[0].revision, screenId: scr[0].id, items: [] };
+      }
+      const tplItems = await db
+        .select()
+        .from(templateItems)
+        .where(eq(templateItems.templateId, slot[0].templateId))
+        .orderBy(templateItems.sortOrder, templateItems.id);
+      return {
+        revision: scr[0].revision,
+        screenId: scr[0].id,
+        items: tplItems.map((it) => ({
+          id: it.id,
+          type: it.type,
+          durationMs: it.durationMs,
+          mimeType: it.mimeType,
+          url: `/api/public/templates/${slot[0].templateId}/media/${it.id}`,
+        })),
+      };
+    }
+
     const items = await db
       .select()
       .from(screenItems)
