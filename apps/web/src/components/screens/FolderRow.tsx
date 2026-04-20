@@ -25,7 +25,7 @@ function ScreenItem({
   onDelete,
   t,
 }: {
-  screen: { id: number; name: string; publicToken: string };
+  screen: { id: number; name: string; publicToken: string; displayMode?: "QUICK" | "TEMPLATE" };
   folderId: number;
   depth: number;
   isAdmin: boolean;
