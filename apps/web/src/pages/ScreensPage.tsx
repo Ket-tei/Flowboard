@@ -1,6 +1,6 @@
 import { useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { CalendarDays, FolderPlus, MonitorPlay, Plus } from "lucide-react";
+import { FolderPlus, MonitorPlay, Plus } from "lucide-react";
 import { useScreenTree } from "@/hooks/useScreenTree";
 import { useMediaDialog } from "@/hooks/useMediaDialog";
 import { FolderRow } from "@/components/screens/FolderRow";
@@ -50,7 +50,6 @@ type CreateState = {
   kind: "folder" | "screen";
   parentFolderId: string;
   name: string;
-  displayMode: "QUICK" | "TEMPLATE";
   busy: boolean;
 };
 
@@ -83,7 +82,6 @@ export function ScreensPage() {
       kind,
       parentFolderId: parentVal,
       name: kind === "folder" ? "" : t("screens.newScreenDefault"),
-      displayMode: "QUICK",
       busy: false,
     });
     setCreateOpen(true);
@@ -111,17 +109,10 @@ export function ScreensPage() {
     } else {
       setCreateState((p) => (p ? { ...p, busy: true } : p));
       try {
-        const mode = createState.displayMode;
-        const created = await tree.createScreen(parentId, mode);
+        const created = await tree.createScreen(parentId);
         setCreateOpen(false);
         setCreateState(null);
-        if (created) {
-          if (mode === "TEMPLATE") {
-            setScheduleScreen(created);
-          } else {
-            await media.openDialog(created);
-          }
-        }
+        if (created) await media.openDialog(created);
       } finally {
         setCreateState((p) => (p ? { ...p, busy: false } : p));
       }
@@ -146,6 +137,18 @@ export function ScreensPage() {
       setScheduleScreen(s);
     } else {
       void media.openDialog(s);
+    }
+  }
+
+  async function handleChangeMode(screen: ScreenRow, newMode: "QUICK" | "TEMPLATE") {
+    await tree.updateScreenMode(screen.id, newMode);
+    const updated = { ...screen, displayMode: newMode };
+    if (newMode === "TEMPLATE") {
+      media.closeDialog();
+      setScheduleScreen(updated);
+    } else {
+      setScheduleScreen(null);
+      await media.openDialog(updated);
     }
   }
 
@@ -286,42 +289,6 @@ export function ScreensPage() {
                 />
               </div>
             )}
-            {createState?.kind === "screen" && (
-              <div className="space-y-1.5">
-                <Label className="text-xs font-medium text-muted-foreground">
-                  {t("screens.displayMode")}
-                </Label>
-                <div className="grid grid-cols-2 gap-3">
-                  {(["QUICK", "TEMPLATE"] as const).map((mode) => (
-                    <button
-                      key={mode}
-                      type="button"
-                      disabled={createState?.busy === true}
-                      onClick={() => setCreateState((p) => (p ? { ...p, displayMode: mode } : p))}
-                      className={`flex flex-col items-start gap-2 rounded-xl border p-3 text-left transition-all ${
-                        createState?.displayMode === mode
-                          ? "border-primary ring-2 ring-primary bg-primary/5"
-                          : "border-border/60 hover:border-border"
-                      }`}
-                    >
-                      {mode === "QUICK" ? (
-                        <MonitorPlay className="size-4 text-primary" />
-                      ) : (
-                        <CalendarDays className="size-4 text-primary" />
-                      )}
-                      <div>
-                        <p className="text-xs font-semibold">
-                          {mode === "QUICK" ? t("screens.modeQuick") : t("screens.modeTemplate")}
-                        </p>
-                        <p className="text-[11px] text-muted-foreground leading-tight mt-0.5">
-                          {mode === "QUICK" ? t("screens.modeQuickDesc") : t("screens.modeTemplateDesc")}
-                        </p>
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
             <div className="space-y-1.5">
               <Label className="text-xs font-medium text-muted-foreground">
                 {t("screens.parentFolder")}
@@ -410,10 +377,12 @@ export function ScreensPage() {
         onEditName={media.setEditedName}
         onSave={() => void media.saveChanges()}
         onCopyUrl={(token) => void tree.copyUrl(token)}
+        onChangeMode={tree.isAdmin ? (mode) => void handleChangeMode(media.dialogScreen!, mode) : undefined}
       />
       <ScheduleDialog
         screen={scheduleScreen}
         onClose={() => setScheduleScreen(null)}
+        onChangeMode={tree.isAdmin ? (mode) => void handleChangeMode(scheduleScreen!, mode) : undefined}
       />
     </div>
   );

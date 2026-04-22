@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Plus, X } from "lucide-react";
+import { CalendarDays, MonitorPlay, Plus, X } from "lucide-react";
 import { toast } from "sonner";
 import { apiFetch } from "@/lib/api";
 import { Button } from "@/components/ui/button";
@@ -40,9 +40,11 @@ function dayLabel(t: (k: string) => string, dow: number): string {
 export function ScheduleDialog({
   screen,
   onClose,
+  onChangeMode,
 }: {
   screen: ScreenRow | null;
   onClose: () => void;
+  onChangeMode?: (mode: "QUICK" | "TEMPLATE") => void;
 }) {
   const { t } = useTranslation();
   const [slots, setSlots] = useState<ScheduleSlot[]>([]);
@@ -105,10 +107,32 @@ export function ScheduleDialog({
   return (
     <Dialog open={!!screen} onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="flex max-h-[90vh] w-[95vw] max-w-5xl flex-col gap-0 overflow-hidden rounded-2xl border-border/60 p-0 shadow-xl">
-        <DialogHeader className="shrink-0 border-b border-border/40 px-6 py-4">
-          <DialogTitle className="text-base font-semibold">
-            {t("schedule.title")} — {screen?.name}
-          </DialogTitle>
+        <DialogHeader className="shrink-0 border-b border-border/40 px-6 py-3">
+          <div className="flex items-center justify-between gap-4">
+            <DialogTitle className="text-base font-semibold">
+              {t("schedule.title")} — {screen?.name}
+            </DialogTitle>
+            {onChangeMode && (
+              <div className="flex overflow-hidden rounded-lg border border-border/60 text-xs">
+                <button
+                  type="button"
+                  onClick={() => onChangeMode("QUICK")}
+                  className="flex items-center gap-1.5 px-3 py-1.5 text-muted-foreground hover:bg-muted/60 transition-colors"
+                >
+                  <MonitorPlay className="size-3.5" />
+                  {t("screens.modeQuick")}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => onChangeMode("TEMPLATE")}
+                  className="flex items-center gap-1.5 px-3 py-1.5 bg-primary text-primary-foreground font-medium"
+                >
+                  <CalendarDays className="size-3.5" />
+                  {t("screens.modeTemplate")}
+                </button>
+              </div>
+            )}
+          </div>
         </DialogHeader>
 
         <div className="min-h-0 flex-1 overflow-auto px-6 py-4">

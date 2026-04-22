@@ -60,11 +60,12 @@ export async function getScreenDetail(screenId: number) {
   };
 }
 
-export async function updateScreen(screenId: number, input: { name?: string; sortOrder?: number; folderId?: number }) {
-  const updates: Partial<{ name: string; sortOrder: number; folderId: number }> = {};
+export async function updateScreen(screenId: number, input: { name?: string; sortOrder?: number; folderId?: number; displayMode?: "QUICK" | "TEMPLATE" }) {
+  const updates: Partial<{ name: string; sortOrder: number; folderId: number; displayMode: "QUICK" | "TEMPLATE" }> = {};
   if (input.name != null) updates.name = input.name;
   if (input.sortOrder !== undefined) updates.sortOrder = input.sortOrder;
   if (input.folderId !== undefined) updates.folderId = input.folderId;
+  if (input.displayMode !== undefined) updates.displayMode = input.displayMode;
   await db.update(screens).set(updates).where(eq(screens.id, screenId));
   await bumpScreenRevision(screenId);
 }

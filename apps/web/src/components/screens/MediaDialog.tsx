@@ -12,7 +12,7 @@ import {
   sortableKeyboardCoordinates,
   horizontalListSortingStrategy,
 } from "@dnd-kit/sortable";
-import { Copy, Save } from "lucide-react";
+import { CalendarDays, Copy, MonitorPlay, Save } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -85,6 +85,7 @@ export function MediaDialog({
   onEditName,
   onSave,
   onCopyUrl,
+  onChangeMode,
 }: {
   screen: ScreenRow | null;
   items: LocalItem[];
@@ -101,6 +102,7 @@ export function MediaDialog({
   onEditName: (name: string) => void;
   onSave: () => void;
   onCopyUrl: (token: string) => void;
+  onChangeMode?: (mode: "QUICK" | "TEMPLATE") => void;
 }) {
   const { t } = useTranslation();
   const sensors = useSensors(
@@ -110,11 +112,33 @@ export function MediaDialog({
 
   return (
     <Dialog open={!!screen} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="flex h-[80vh] w-[95vw] max-w-none flex-col gap-0 overflow-hidden rounded-2xl border-border/60 p-0 shadow-xl sm:max-w-none sm:h-[80vh] sm:w-[80vw]">
-        <DialogHeader className="shrink-0 border-b border-border/40 px-8 py-4">
-          <DialogTitle className="text-base font-semibold">
-            {t("screens.dialogTitle")}
-          </DialogTitle>
+      <DialogContent className="flex h-[85vh] w-[95vw] max-w-[95vw] flex-col gap-0 overflow-hidden rounded-2xl border-border/60 p-0 shadow-xl md:w-[80vw] md:max-w-[80vw]">
+        <DialogHeader className="shrink-0 border-b border-border/40 px-6 py-3">
+          <div className="flex items-center justify-between gap-4">
+            <DialogTitle className="text-base font-semibold">
+              {t("screens.dialogTitle")}
+            </DialogTitle>
+            {onChangeMode && (
+              <div className="flex overflow-hidden rounded-lg border border-border/60 text-xs">
+                <button
+                  type="button"
+                  onClick={() => onChangeMode("QUICK")}
+                  className="flex items-center gap-1.5 px-3 py-1.5 bg-primary text-primary-foreground font-medium"
+                >
+                  <MonitorPlay className="size-3.5" />
+                  {t("screens.modeQuick")}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => onChangeMode("TEMPLATE")}
+                  className="flex items-center gap-1.5 px-3 py-1.5 text-muted-foreground hover:bg-muted/60 transition-colors"
+                >
+                  <CalendarDays className="size-3.5" />
+                  {t("screens.modeTemplate")}
+                </button>
+              </div>
+            )}
+          </div>
         </DialogHeader>
 
         {screen && (

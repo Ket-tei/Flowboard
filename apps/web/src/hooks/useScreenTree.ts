@@ -100,6 +100,14 @@ export function useScreenTree() {
     };
   }
 
+  async function updateScreenMode(screenId: number, displayMode: "QUICK" | "TEMPLATE") {
+    await apiFetch(`/api/screens/${screenId}`, {
+      method: "PATCH",
+      body: JSON.stringify({ displayMode }),
+    });
+    await loadTree();
+  }
+
   async function deleteNode(type: "folder" | "screen", id: number) {
     if (type === "folder") {
       await apiFetch(`/api/folders/${id}`, { method: "DELETE" });
@@ -160,6 +168,7 @@ export function useScreenTree() {
     loadTree,
     createFolder,
     createScreen,
+    updateScreenMode,
     deleteNode,
     onDragStart,
     onDropOnFolder,

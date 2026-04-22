@@ -10,6 +10,7 @@ export const updateScreenSchema = z
     name: z.string().trim().min(1).max(255).optional(),
     sortOrder: z.number().int().optional(),
     folderId: z.number().int().positive().optional(),
+    displayMode: z.enum(["QUICK", "TEMPLATE"]).optional(),
   })
   .refine((d) => Object.values(d).some((v) => v !== undefined), {
     message: "at least one field required",
