@@ -5,7 +5,7 @@ import { cn } from "@/lib/cn";
 
 const SLUG_RE = /^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$/;
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const DOMAIN = import.meta.env.VITE_INSTANCE_BASE_HOST ?? "localhost";
+const DOMAIN = import.meta.env.VITE_INSTANCE_BASE_HOST ?? window.location.hostname;
 
 type ProvisioningPhase = "idle" | "validating" | "deploying" | "ready" | "failed";
 
