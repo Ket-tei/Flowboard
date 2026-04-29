@@ -67,12 +67,18 @@ export async function registerPublicRoutes(app: FastifyInstance) {
           mimeType: it.mimeType,
           url: `/api/public/templates/${slot[0].templateId}/media/${it.id}`,
           transitionType: it.transitionType,
+          transitionDurationMs: it.transitionDurationMs,
         })),
-        widgets: widgets.map((w) => ({
-          id: w.id,
-          type: w.type,
-          position: w.position,
-          config: safeParseJson(w.config),
+        widgets: widgets.map((widget) => ({
+          id: widget.id,
+          type: widget.type,
+          config: safeParseJson(widget.config),
+          x: Number(widget.x),
+          y: Number(widget.y),
+          w: Number(widget.w),
+          h: Number(widget.h),
+          startMs: widget.startMs,
+          endMs: widget.endMs,
         })),
       };
     }

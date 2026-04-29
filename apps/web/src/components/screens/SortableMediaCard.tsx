@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react";
-import { useTranslation } from "react-i18next";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { GripVertical, Trash2 } from "lucide-react";
@@ -7,32 +6,24 @@ import { apiUrl } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
-import type { ScreenItem, TransitionType } from "@/types/screen.types";
-
-const TRANSITIONS: TransitionType[] = ["NONE", "FADE", "SLIDE_LEFT", "SLIDE_UP"];
+import type { ScreenItem } from "@/types/screen.types";
 
 export function SortableMediaCard({
   item,
   token,
-  mediaUrlBase,
   onUpdateDuration,
-  onUpdateTransition,
   onDelete,
 }: {
   item: ScreenItem;
   token: string;
-  mediaUrlBase?: string;
   onUpdateDuration: (id: number, durationMs: number) => void;
-  onUpdateTransition: (id: number, transitionType: TransitionType) => void;
   onDelete: (id: number) => void;
 }) {
-  const { t } = useTranslation();
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: String(item.id),
   });
   const style = { transform: CSS.Transform.toString(transform), transition };
-  const base = mediaUrlBase ?? `/api/public/screens/${token}/media`;
-  const src = apiUrl(`${base}/${item.id}`);
+  const src = apiUrl(`/api/public/screens/${token}/media/${item.id}`);
   const [durationStr, setDurationStr] = useState<string>(() => String(item.durationMs ?? 5000));
 
   useEffect(() => {
@@ -40,7 +31,6 @@ export function SortableMediaCard({
   }, [item.durationMs]);
 
   const isVideo = item.type === "VIDEO";
-  const currentTransition = item.transitionType ?? "NONE";
 
   return (
     <div
@@ -88,15 +78,6 @@ export function SortableMediaCard({
             }}
           />
         </div>
-        <select
-          value={currentTransition}
-          onChange={(e) => onUpdateTransition(item.id, e.target.value as TransitionType)}
-          className="h-6 w-full rounded-lg border border-border/60 bg-transparent px-1.5 text-[10px] focus:outline-none focus:ring-1 focus:ring-ring"
-        >
-          {TRANSITIONS.map((tr) => (
-            <option key={tr} value={tr}>{t(`transitions.${tr}`)}</option>
-          ))}
-        </select>
       </div>
 
       <Button

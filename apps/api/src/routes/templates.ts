@@ -60,19 +60,31 @@ const WIDGET_TYPES = ["WEATHER_CURRENT"] as const;
 const updateItemSchema = z.object({
   durationMs: z.number().int().min(0).optional(),
   transitionType: z.enum(TRANSITION_VALUES).optional(),
+  transitionDurationMs: z.number().int().min(50).max(5000).optional(),
 }).refine((d) => Object.values(d).some((v) => v !== undefined), {
   message: "at least one field required",
 });
+
+const geometrySchema = {
+  x: z.number().min(0).max(1).optional(),
+  y: z.number().min(0).max(1).optional(),
+  w: z.number().min(0).max(1).optional(),
+  h: z.number().min(0).max(1).optional(),
+  startMs: z.number().int().nullable().optional(),
+  endMs: z.number().int().nullable().optional(),
+};
 
 const createWidgetSchema = z.object({
   type: z.enum(WIDGET_TYPES),
   position: z.enum(WIDGET_POSITIONS).default("TOP_RIGHT"),
   config: z.record(z.string(), z.unknown()).default({}),
+  ...geometrySchema,
 });
 
 const updateWidgetSchema = z.object({
   position: z.enum(WIDGET_POSITIONS).optional(),
   config: z.record(z.string(), z.unknown()).optional(),
+  ...geometrySchema,
 }).refine((d) => Object.values(d).some((v) => v !== undefined), {
   message: "at least one field required",
 });
@@ -278,12 +290,18 @@ export async function registerTemplateRoutes(app: FastifyInstance) {
         sortOrder: it.sortOrder,
         mimeType: it.mimeType,
         transitionType: it.transitionType,
+        transitionDurationMs: it.transitionDurationMs,
       })),
-      widgets: widgets.map((w) => ({
-        id: w.id,
-        type: w.type,
-        position: w.position,
-        config: safeParseJson(w.config),
+      widgets: widgets.map((widget) => ({
+        id: widget.id,
+        type: widget.type,
+        config: safeParseJson(widget.config),
+        x: Number(widget.x),
+        y: Number(widget.y),
+        w: Number(widget.w),
+        h: Number(widget.h),
+        startMs: widget.startMs,
+        endMs: widget.endMs,
       })),
     };
   });
@@ -320,11 +338,12 @@ export async function registerTemplateRoutes(app: FastifyInstance) {
     }
     const mp = await request.file();
     if (!mp) return reply.status(400).send({ error: "file required" });
-    const q = request.query as { durationMs?: string; transitionType?: string };
+    const q = request.query as { durationMs?: string; transitionType?: string; transitionDurationMs?: string };
     const durationMs = Number(q.durationMs ?? 5000) || 5000;
     const transitionType = (TRANSITION_VALUES as readonly string[]).includes(q.transitionType ?? "")
       ? (q.transitionType as typeof TRANSITION_VALUES[number])
       : "NONE";
+    const transitionDurationMs = Math.min(5000, Math.max(50, Number(q.transitionDurationMs ?? 350) || 350));
 
     const mime = mp.mimetype ?? "application/octet-stream";
     const kind = mimeToMediaType(mime);
@@ -345,11 +364,11 @@ export async function registerTemplateRoutes(app: FastifyInstance) {
       .limit(1);
     const nextOrder = (maxOrder[0]?.sortOrder ?? -1) + 1;
 
-    await db.insert(templateItems).values({ templateId, type: kind, storageKey, mimeType: mime, durationMs, sortOrder: nextOrder, transitionType });
+    await db.insert(templateItems).values({ templateId, type: kind, storageKey, mimeType: mime, durationMs, sortOrder: nextOrder, transitionType, transitionDurationMs });
     const [lid] = await pool.query("SELECT LAST_INSERT_ID() AS id");
     const itemId = Number((lid as { id: number }[])[0]?.id);
     await bumpTemplateRevision(templateId);
-    return { id: itemId, type: kind, durationMs, sortOrder: nextOrder, mimeType: mime, transitionType };
+    return { id: itemId, type: kind, durationMs, sortOrder: nextOrder, mimeType: mime, transitionType, transitionDurationMs };
   });
 
   app.patch("/templates/:id/items/order", { preHandler: authPreHandler }, async (request, reply) => {
@@ -383,9 +402,10 @@ export async function registerTemplateRoutes(app: FastifyInstance) {
     const input = validate(updateItemSchema, request.body);
     const row = await db.select().from(templateItems).where(eq(templateItems.id, itemId)).limit(1);
     if (!row[0] || row[0].templateId !== templateId) return reply.status(404).send({ error: "item not found" });
-    const updates: Partial<{ durationMs: number; transitionType: typeof TRANSITION_VALUES[number] }> = {};
+    const updates: Partial<{ durationMs: number; transitionType: typeof TRANSITION_VALUES[number]; transitionDurationMs: number }> = {};
     if (input.durationMs !== undefined) updates.durationMs = input.durationMs;
     if (input.transitionType !== undefined) updates.transitionType = input.transitionType;
+    if (input.transitionDurationMs !== undefined) updates.transitionDurationMs = input.transitionDurationMs;
     await db.update(templateItems).set(updates).where(eq(templateItems.id, itemId));
     await bumpTemplateRevision(templateId);
     return { ok: true };
@@ -418,16 +438,26 @@ export async function registerTemplateRoutes(app: FastifyInstance) {
       return reply.status(403).send({ error: "Forbidden" });
     }
     const input = validate(createWidgetSchema, request.body);
+    const wx = input.x ?? 0.85;
+    const wy = input.y ?? 0.04;
+    const ww = input.w ?? 0.13;
+    const wh = input.h ?? 0.10;
     await db.insert(templateWidgets).values({
       templateId,
       type: input.type,
       position: input.position,
       config: JSON.stringify(input.config),
+      x: String(wx),
+      y: String(wy),
+      w: String(ww),
+      h: String(wh),
+      startMs: input.startMs ?? null,
+      endMs: input.endMs ?? null,
     });
     const [lid] = await pool.query("SELECT LAST_INSERT_ID() AS id");
     const id = Number((lid as { id: number }[])[0]?.id);
     await bumpTemplateRevision(templateId);
-    return { id, type: input.type, position: input.position, config: input.config };
+    return { id, type: input.type, config: input.config, x: wx, y: wy, w: ww, h: wh, startMs: input.startMs ?? null, endMs: input.endMs ?? null };
   });
 
   app.patch("/templates/:id/widgets/:widgetId", { preHandler: authPreHandler }, async (request, reply) => {
@@ -443,9 +473,15 @@ export async function registerTemplateRoutes(app: FastifyInstance) {
     const input = validate(updateWidgetSchema, request.body);
     const row = await db.select().from(templateWidgets).where(eq(templateWidgets.id, widgetId)).limit(1);
     if (!row[0] || row[0].templateId !== templateId) return reply.status(404).send({ error: "widget not found" });
-    const updates: Partial<{ position: typeof WIDGET_POSITIONS[number]; config: string }> = {};
+    const updates: Partial<{ position: typeof WIDGET_POSITIONS[number]; config: string; x: string; y: string; w: string; h: string; startMs: number | null; endMs: number | null }> = {};
     if (input.position !== undefined) updates.position = input.position;
     if (input.config !== undefined) updates.config = JSON.stringify(input.config);
+    if (input.x !== undefined) updates.x = String(input.x);
+    if (input.y !== undefined) updates.y = String(input.y);
+    if (input.w !== undefined) updates.w = String(input.w);
+    if (input.h !== undefined) updates.h = String(input.h);
+    if ("startMs" in input) updates.startMs = input.startMs ?? null;
+    if ("endMs" in input) updates.endMs = input.endMs ?? null;
     await db.update(templateWidgets).set(updates).where(eq(templateWidgets.id, widgetId));
     await bumpTemplateRevision(templateId);
     return { ok: true };

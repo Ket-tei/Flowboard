@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import type { TemplateWidget, WidgetPosition } from "@/types/screen.types";
+import type { TemplateWidget } from "@/types/screen.types";
 
 type WeatherData = {
   temperature: number;
@@ -9,13 +9,6 @@ type WeatherData = {
 
 const CACHE_TTL_MS = 10 * 60 * 1000;
 const weatherCache = new Map<string, { data: WeatherData; ts: number }>();
-
-const POSITION_CLASSES: Record<WidgetPosition, string> = {
-  TOP_LEFT: "top-4 left-4",
-  TOP_RIGHT: "top-4 right-4",
-  BOTTOM_LEFT: "bottom-4 left-4",
-  BOTTOM_RIGHT: "bottom-4 right-4",
-};
 
 function weatherCodeToEmoji(code: number): string {
   if (code === 0) return "☀️";
@@ -52,7 +45,7 @@ async function fetchWeather(lat: number, lon: number, city: string, units: strin
   return data;
 }
 
-export function WeatherOverlay({ widget }: { widget: TemplateWidget }) {
+export function WeatherOverlay({ widget, inline }: { widget: TemplateWidget; inline?: boolean }) {
   const config = widget.config as { lat?: number; lon?: number; city?: string; units?: string };
   const [weather, setWeather] = useState<WeatherData | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -75,13 +68,10 @@ export function WeatherOverlay({ widget }: { widget: TemplateWidget }) {
 
   if (!config.lat || !config.lon || !weather) return null;
 
-  const posClass = POSITION_CLASSES[widget.position] ?? "top-4 right-4";
   const unit = config.units === "fahrenheit" ? "°F" : "°C";
 
-  return (
-    <div
-      className={`absolute ${posClass} z-20 flex items-center gap-2 rounded-2xl bg-black/50 px-3 py-2 backdrop-blur-sm`}
-    >
+  const content = (
+    <div className="flex h-full w-full items-center gap-2 rounded-2xl bg-black/50 px-3 py-2 backdrop-blur-sm">
       <span className="text-2xl">{weatherCodeToEmoji(weather.weatherCode)}</span>
       <div className="flex flex-col leading-tight">
         <span className="text-lg font-bold text-white">
@@ -91,6 +81,22 @@ export function WeatherOverlay({ widget }: { widget: TemplateWidget }) {
           <span className="text-xs text-white/70">{weather.city}</span>
         )}
       </div>
+    </div>
+  );
+
+  if (inline) return content;
+
+  return (
+    <div
+      className="absolute z-20"
+      style={{
+        left: `${widget.x * 100}%`,
+        top: `${widget.y * 100}%`,
+        width: `${widget.w * 100}%`,
+        height: `${widget.h * 100}%`,
+      }}
+    >
+      {content}
     </div>
   );
 }

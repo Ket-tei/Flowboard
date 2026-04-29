@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { apiUrl } from "@/lib/api";
 import type { TemplateWidget } from "@/types/screen.types";
 import { WeatherOverlay } from "./WeatherOverlay";
@@ -10,6 +10,7 @@ export type PlayerItem = {
   mimeType: string;
   url: string;
   transitionType?: string;
+  transitionDurationMs?: number;
 };
 
 const TRANSITION_CLASSES: Record<string, string> = {
@@ -21,14 +22,19 @@ const TRANSITION_CLASSES: Record<string, string> = {
 export function ScreenPlayer({
   items,
   widgets = [],
+  onTime,
+  renderWidget,
 }: {
   items: PlayerItem[];
   widgets?: TemplateWidget[];
+  onTime?: (absMs: number) => void;
+  renderWidget?: (w: TemplateWidget) => ReactNode;
 }) {
   const [index, setIndex] = useState(0);
   const videoEndedRef = useRef(false);
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const lastGoodSrcRef = useRef<string | null>(null);
+  const itemStartTsRef = useRef<number>(Date.now());
 
   const n = items.length;
   const safeIdx = n ? index % n : 0;
@@ -41,7 +47,6 @@ export function ScreenPlayer({
 
   const src = current ? resolveUrl(current.url) : null;
   const isVideo = current?.type === "VIDEO";
-  const isGif = current?.type === "GIF";
 
   const advance = useCallback(() => {
     setIndex((i) => (n > 1 ? (i + 1) % n : 0));
@@ -51,6 +56,22 @@ export function ScreenPlayer({
   useEffect(() => {
     setIndex(0);
   }, [items]);
+
+  // Track item start time for onTime reporting
+  useEffect(() => {
+    itemStartTsRef.current = Date.now();
+  }, [safeIdx]);
+
+  // Emit onTime every 250ms
+  useEffect(() => {
+    if (!onTime || !n) return;
+    const id = setInterval(() => {
+      const prefixMs = items.slice(0, safeIdx).reduce((acc, it) => acc + it.durationMs, 0);
+      const elapsed = Date.now() - itemStartTsRef.current;
+      onTime(prefixMs + elapsed);
+    }, 250);
+    return () => clearInterval(id);
+  }, [onTime, n, safeIdx, items]);
 
   useEffect(() => {
     if (!current || !src) return;
@@ -127,15 +148,6 @@ export function ScreenPlayer({
             onLoadedData={onLoaded}
             onError={onMediaError}
           />
-        ) : isGif ? (
-          <img
-            key={`fg-g-${current?.id}`}
-            src={fgSrc}
-            alt=""
-            className={`max-h-full max-w-full object-contain ${transitionClass}`}
-            onLoad={onLoaded}
-            onError={onMediaError}
-          />
         ) : (
           <img
             key={`fg-i-${current?.id}`}
@@ -149,9 +161,9 @@ export function ScreenPlayer({
       </div>
 
       {/* Widgets overlay */}
-      {widgets.map((w) => (
-        <WeatherOverlay key={w.id} widget={w} />
-      ))}
+      {widgets.map((w) =>
+        renderWidget ? renderWidget(w) : <WeatherOverlay key={w.id} widget={w} />
+      )}
     </div>
   );
 }

@@ -11,6 +11,7 @@ import { SettingsPage } from "@/pages/SettingsPage";
 import { BillingPage } from "@/pages/BillingPage";
 import { HelpPage } from "@/pages/HelpPage";
 import { ShowPage } from "@/pages/ShowPage";
+import { TemplateEditorPage } from "@/pages/TemplateEditorPage";
 
 function RequireAuth({ children }: { children: ReactNode }) {
   const { user, loading } = useAuth();
@@ -32,6 +33,14 @@ export default function App() {
     <Routes>
       <Route path="/login" element={<LoginPage />} />
       <Route path="/show/:token" element={<ShowPage />} />
+      <Route
+        path="/app/templates/:id/edit"
+        element={
+          <RequireAuth>
+            <TemplateEditorPage />
+          </RequireAuth>
+        }
+      />
       <Route
         path="/app"
         element={

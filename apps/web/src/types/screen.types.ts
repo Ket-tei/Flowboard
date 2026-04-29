@@ -18,14 +18,19 @@ export type ScreenItem = {
   sortOrder: number;
   mimeType: string;
   transitionType?: TransitionType;
+  transitionDurationMs?: number;
 };
 
-export type WidgetPosition = "TOP_LEFT" | "TOP_RIGHT" | "BOTTOM_LEFT" | "BOTTOM_RIGHT";
 export type WidgetType = "WEATHER_CURRENT";
 
 export type TemplateWidget = {
   id: number;
   type: WidgetType;
-  position: WidgetPosition;
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+  startMs: number | null;
+  endMs: number | null;
   config: Record<string, unknown>;
 };

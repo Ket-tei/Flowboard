@@ -265,6 +265,25 @@
     "noWidgets": "No widgets. Add one below.",
     "adding": "Adding…"
   },
+  "templateEditor": {
+    "save": "Save",
+    "cancel": "Cancel",
+    "unsavedChanges": "You have unsaved changes. Discard?",
+    "totalDuration": "Total: {{seconds}}s",
+    "mediaTrack": "Media",
+    "widgetTracks": "Widgets",
+    "addWidget": "Add widget",
+    "deleteWidget": "Delete",
+    "alwaysVisible": "Always",
+    "transitionLabel": "Transition",
+    "transitionDuration": "Transition duration (ms)",
+    "weatherCity": "City",
+    "weatherUnits": "Units",
+    "weatherLabel": "Weather",
+    "celsius": "Celsius (°C)",
+    "fahrenheit": "Fahrenheit (°F)",
+    "noMedia": "Add media to start"
+  },
   "show": {
     "missingToken": "Missing token",
     "noMedia": "No media"

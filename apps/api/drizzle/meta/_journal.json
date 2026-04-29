@@ -29,6 +29,13 @@
       "when": 1782000000000,
       "tag": "0003_template_transitions_widgets",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "5",
+      "when": 1746000000000,
+      "tag": "0004_template_editor_geometry",
+      "breakpoints": true
     }
   ]
 }

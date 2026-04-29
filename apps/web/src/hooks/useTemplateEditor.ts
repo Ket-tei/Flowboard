@@ -8,7 +8,7 @@ import type { ScreenRow, ScreenItem, TransitionType, TemplateWidget } from "@/ty
 import type { LocalItem, PendingItem } from "@/hooks/useMediaDialog";
 import { isPendingItem } from "@/hooks/useMediaDialog";
 
-export function useTemplateMediaDialog(onTreeChanged: () => Promise<void>) {
+export function useTemplateEditor(onTreeChanged: () => Promise<void>) {
   const { t } = useTranslation();
   const [dialogScreen, setDialogScreen] = useState<ScreenRow | null>(null);
   const [localItems, setLocalItems] = useState<LocalItem[]>([]);
@@ -18,6 +18,7 @@ export function useTemplateMediaDialog(onTreeChanged: () => Promise<void>) {
   const [saving, setSaving] = useState(false);
   const [widgets, setWidgets] = useState<TemplateWidget[]>([]);
   const [originalWidgets, setOriginalWidgets] = useState<TemplateWidget[]>([]);
+  const [loading, setLoading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const itemIds = useMemo(
@@ -34,44 +35,35 @@ export function useTemplateMediaDialog(onTreeChanged: () => Promise<void>) {
       if (localReal[i].id !== originalItems[i]?.id) return true;
       if (localReal[i].durationMs !== originalItems[i]?.durationMs) return true;
       if ((localReal[i].transitionType ?? "NONE") !== (originalItems[i]?.transitionType ?? "NONE")) return true;
+      if ((localReal[i].transitionDurationMs ?? 350) !== (originalItems[i]?.transitionDurationMs ?? 350)) return true;
     }
     if (widgets.length !== originalWidgets.length) return true;
+    for (let i = 0; i < widgets.length; i++) {
+      const w = widgets[i];
+      const o = originalWidgets[i];
+      if (!o || w.id !== o.id) return true;
+      if (w.x !== o.x || w.y !== o.y || w.w !== o.w || w.h !== o.h) return true;
+      if (w.startMs !== o.startMs || w.endMs !== o.endMs) return true;
+    }
     return false;
   }, [editedName, originalName, localItems, originalItems, widgets, originalWidgets]);
 
-  const openDialog = useCallback(async (s: ScreenRow) => {
-    setDialogScreen(s);
-    setLocalItems([]);
-    setOriginalItems([]);
-    setWidgets([]);
-    setOriginalWidgets([]);
-    setEditedName(s.name);
-    setOriginalName(s.name);
-    const r = await apiFetch<{ screen: ScreenRow; items: ScreenItem[]; widgets: TemplateWidget[] }>(`/api/templates/${s.id}`);
-    const sorted = r.items.sort((a, b) => a.sortOrder - b.sortOrder || a.id - b.id);
-    setDialogScreen(r.screen);
-    setLocalItems(sorted);
-    setOriginalItems(sorted);
-    setEditedName(r.screen.name);
-    setOriginalName(r.screen.name);
-    setWidgets(r.widgets ?? []);
-    setOriginalWidgets(r.widgets ?? []);
+  const loadTemplate = useCallback(async (templateId: number) => {
+    setLoading(true);
+    try {
+      const r = await apiFetch<{ screen: ScreenRow; items: ScreenItem[]; widgets: TemplateWidget[] }>(`/api/templates/${templateId}`);
+      const sorted = r.items.sort((a, b) => a.sortOrder - b.sortOrder || a.id - b.id);
+      setDialogScreen(r.screen);
+      setLocalItems(sorted);
+      setOriginalItems(sorted);
+      setEditedName(r.screen.name);
+      setOriginalName(r.screen.name);
+      setWidgets(r.widgets ?? []);
+      setOriginalWidgets(r.widgets ?? []);
+    } finally {
+      setLoading(false);
+    }
   }, []);
-
-  function closeDialog() {
-    setLocalItems((prev) => {
-      for (const it of prev) {
-        if (isPendingItem(it)) URL.revokeObjectURL(it.previewUrl);
-      }
-      return [];
-    });
-    setDialogScreen(null);
-    setOriginalItems([]);
-    setWidgets([]);
-    setOriginalWidgets([]);
-    setEditedName("");
-    setOriginalName("");
-  }
 
   function onDragEnd(e: DragEndEvent) {
     const { active, over } = e;
@@ -108,6 +100,15 @@ export function useTemplateMediaDialog(onTreeChanged: () => Promise<void>) {
     );
   }
 
+  function updateItemTransitionDuration(id: number | string, transitionDurationMs: number) {
+    setLocalItems((prev) =>
+      prev.map((it) => {
+        if (isPendingItem(it)) return it.localId === id ? { ...it, transitionDurationMs } : it;
+        return it.id === id ? { ...it, transitionDurationMs } : it;
+      })
+    );
+  }
+
   function uploadFiles(files: FileList | File[]) {
     const newItems: PendingItem[] = Array.from(files).map((file) => ({
       localId: `pending-${Date.now()}-${Math.random()}`,
@@ -115,28 +116,36 @@ export function useTemplateMediaDialog(onTreeChanged: () => Promise<void>) {
       previewUrl: URL.createObjectURL(file),
       durationMs: 5000,
       transitionType: "NONE" as TransitionType,
+      transitionDurationMs: 350,
     }));
     setLocalItems((prev) => [...prev, ...newItems]);
+  }
+
+  function updateWidgetGeometry(id: number, geom: { x: number; y: number; w: number; h: number }) {
+    setWidgets((prev) => prev.map((widget) => (widget.id === id ? { ...widget, ...geom } : widget)));
+  }
+
+  function updateWidgetTiming(id: number, timing: { startMs: number | null; endMs: number | null }) {
+    setWidgets((prev) => prev.map((widget) => (widget.id === id ? { ...widget, ...timing } : widget)));
   }
 
   async function addWidget(widget: Omit<TemplateWidget, "id">) {
     if (!dialogScreen) return;
     const created = await apiFetch<TemplateWidget>(`/api/templates/${dialogScreen.id}/widgets`, {
       method: "POST",
-      body: JSON.stringify({ type: widget.type, position: widget.position, config: widget.config }),
+      body: JSON.stringify({
+        type: widget.type,
+        config: widget.config,
+        x: widget.x,
+        y: widget.y,
+        w: widget.w,
+        h: widget.h,
+        startMs: widget.startMs,
+        endMs: widget.endMs,
+      }),
     });
     setWidgets((prev) => [...prev, created]);
     setOriginalWidgets((prev) => [...prev, created]);
-  }
-
-  async function updateWidget(widgetId: number, updates: Partial<Pick<TemplateWidget, "position" | "config">>) {
-    if (!dialogScreen) return;
-    await apiFetch(`/api/templates/${dialogScreen.id}/widgets/${widgetId}`, {
-      method: "PATCH",
-      body: JSON.stringify(updates),
-    });
-    setWidgets((prev) => prev.map((w) => (w.id === widgetId ? { ...w, ...updates } : w)));
-    setOriginalWidgets((prev) => prev.map((w) => (w.id === widgetId ? { ...w, ...updates } : w)));
   }
 
   async function removeWidget(widgetId: number) {
@@ -158,12 +167,16 @@ export function useTemplateMediaDialog(onTreeChanged: () => Promise<void>) {
         if (!isPendingItem(it)) continue;
         const fd = new FormData();
         fd.append("file", it.file);
-        const params = new URLSearchParams({ durationMs: String(it.durationMs), transitionType: it.transitionType ?? "NONE" });
+        const params = new URLSearchParams({
+          durationMs: String(it.durationMs),
+          transitionType: it.transitionType ?? "NONE",
+          transitionDurationMs: String(it.transitionDurationMs ?? 350),
+        });
         const created = await apiFetch<ScreenItem>(`${base}?${params.toString()}`, {
           method: "POST",
           body: fd,
         });
-        uploadedMap.set(it.localId, { ...created, durationMs: it.durationMs, transitionType: it.transitionType });
+        uploadedMap.set(it.localId, { ...created, durationMs: it.durationMs, transitionType: it.transitionType, transitionDurationMs: it.transitionDurationMs });
       }
 
       const finalItems: ScreenItem[] = localItems
@@ -186,10 +199,15 @@ export function useTemplateMediaDialog(onTreeChanged: () => Promise<void>) {
         if (!orig) continue;
         const durChanged = orig.durationMs !== it.durationMs;
         const trnChanged = (orig.transitionType ?? "NONE") !== (it.transitionType ?? "NONE");
-        if (durChanged || trnChanged) {
+        const trnDurChanged = (orig.transitionDurationMs ?? 350) !== (it.transitionDurationMs ?? 350);
+        if (durChanged || trnChanged || trnDurChanged) {
           await apiFetch(`${base}/${it.id}`, {
             method: "PATCH",
-            body: JSON.stringify({ durationMs: it.durationMs, transitionType: it.transitionType ?? "NONE" }),
+            body: JSON.stringify({
+              durationMs: it.durationMs,
+              transitionType: it.transitionType ?? "NONE",
+              transitionDurationMs: it.transitionDurationMs ?? 350,
+            }),
           });
         }
       }
@@ -199,6 +217,21 @@ export function useTemplateMediaDialog(onTreeChanged: () => Promise<void>) {
           method: "PATCH",
           body: JSON.stringify({ orderedIds: finalItems.map((i) => i.id) }),
         });
+      }
+
+      // Save widget changes
+      const origWidgetMap = new Map(originalWidgets.map((w) => [w.id, w]));
+      for (const widget of widgets) {
+        const orig = origWidgetMap.get(widget.id);
+        if (!orig) continue;
+        const geomChanged = widget.x !== orig.x || widget.y !== orig.y || widget.w !== orig.w || widget.h !== orig.h;
+        const timingChanged = widget.startMs !== orig.startMs || widget.endMs !== orig.endMs;
+        if (geomChanged || timingChanged) {
+          await apiFetch(`/api/templates/${templateId}/widgets/${widget.id}`, {
+            method: "PATCH",
+            body: JSON.stringify({ x: widget.x, y: widget.y, w: widget.w, h: widget.h, startMs: widget.startMs, endMs: widget.endMs }),
+          });
+        }
       }
 
       const trimmed = editedName.trim();
@@ -237,17 +270,18 @@ export function useTemplateMediaDialog(onTreeChanged: () => Promise<void>) {
     setEditedName,
     hasChanges,
     saving,
+    loading,
     widgets,
-    openDialog,
-    closeDialog,
-    setDialogScreen,
+    loadTemplate,
     onDragEnd,
     deleteItem,
     updateItemDuration,
     updateItemTransition,
+    updateItemTransitionDuration,
     uploadFiles,
+    updateWidgetGeometry,
+    updateWidgetTiming,
     addWidget,
-    updateWidget,
     removeWidget,
     saveChanges,
   } as const;

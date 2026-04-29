@@ -373,7 +373,6 @@ export function ScreensPage() {
         onDragEnd={(e) => void media.onDragEnd(e)}
         onDeleteItem={(id) => void media.deleteItem(id)}
         onUpdateDuration={(id, ms) => void media.updateItemDuration(id, ms)}
-        onUpdateTransition={(id, type) => void media.updateItemTransition(id, type)}
         onUploadFiles={(files) => void media.uploadFiles(files)}
         onEditName={media.setEditedName}
         onSave={() => void media.saveChanges()}

@@ -265,6 +265,25 @@
     "noWidgets": "Aucun widget. Ajoutez-en un ci-dessous.",
     "adding": "Ajout…"
   },
+  "templateEditor": {
+    "save": "Enregistrer",
+    "cancel": "Annuler",
+    "unsavedChanges": "Vous avez des modifications non enregistrées. Annuler ?",
+    "totalDuration": "Total : {{seconds}}s",
+    "mediaTrack": "Médias",
+    "widgetTracks": "Widgets",
+    "addWidget": "Ajouter un widget",
+    "deleteWidget": "Supprimer",
+    "alwaysVisible": "Toujours",
+    "transitionLabel": "Transition",
+    "transitionDuration": "Durée de transition (ms)",
+    "weatherCity": "Ville",
+    "weatherUnits": "Unités",
+    "weatherLabel": "Météo",
+    "celsius": "Celsius (°C)",
+    "fahrenheit": "Fahrenheit (°F)",
+    "noMedia": "Ajoutez un média pour commencer"
+  },
   "show": {
     "missingToken": "Jeton manquant",
     "noMedia": "Aucun média"

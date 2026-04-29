@@ -1,10 +1,9 @@
 import { useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { useNavigate } from "react-router-dom";
 import { FolderPlus, LayoutTemplate, Plus } from "lucide-react";
 import { useTemplateTree } from "@/hooks/useTemplateTree";
-import { useTemplateMediaDialog } from "@/hooks/useTemplateMediaDialog";
 import { FolderRow } from "@/components/screens/FolderRow";
-import { MediaDialog } from "@/components/screens/MediaDialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -53,8 +52,8 @@ type CreateState = {
 
 export function TemplatesPage() {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const tree = useTemplateTree();
-  const media = useTemplateMediaDialog(tree.loadTree);
 
   const pendingInputRef = useRef<HTMLInputElement | null>(null);
   const [createOpen, setCreateOpen] = useState(false);
@@ -109,7 +108,7 @@ export function TemplatesPage() {
         const created = await tree.createScreen(parentId);
         setCreateOpen(false);
         setCreateState(null);
-        if (created) await media.openDialog(created);
+        if (created) navigate(`/app/templates/${created.id}/edit`);
       } finally {
         setCreateState((p) => (p ? { ...p, busy: false } : p));
       }
@@ -208,7 +207,7 @@ export function TemplatesPage() {
                       tree.setSelectedScreenId(screenId);
                       tree.setSelectedFolderId(folderId);
                     }}
-                    onOpenDialog={(s) => void media.openDialog(s)}
+                    onOpenDialog={(s) => navigate(`/app/templates/${s.id}/edit`)}
                     onCopyUrl={() => undefined}
                     onDragStart={tree.onDragStart}
                     onDropOnFolder={(e, folderId) => void tree.onDropOnFolder(e, folderId)}
@@ -338,28 +337,6 @@ export function TemplatesPage() {
         </AlertDialogContent>
       </AlertDialog>
 
-      <MediaDialog
-        screen={media.dialogScreen}
-        items={media.localItems}
-        itemIds={media.itemIds}
-        fileInputRef={media.fileInputRef}
-        editedName={media.editedName}
-        hasChanges={media.hasChanges}
-        saving={media.saving}
-        onClose={media.closeDialog}
-        onDragEnd={(e) => void media.onDragEnd(e)}
-        onDeleteItem={(id) => void media.deleteItem(id)}
-        onUpdateDuration={(id, ms) => void media.updateItemDuration(id, ms)}
-        onUpdateTransition={(id, type) => void media.updateItemTransition(id, type)}
-        onUploadFiles={(files) => void media.uploadFiles(files)}
-        onEditName={media.setEditedName}
-        onSave={() => void media.saveChanges()}
-        onCopyUrl={() => undefined}
-        isTemplate
-        widgets={media.widgets}
-        onAddWidget={(w) => media.addWidget(w)}
-        onRemoveWidget={(id) => media.removeWidget(id)}
-      />
     </div>
   );
 }

@@ -6,6 +6,7 @@ import {
   mysqlEnum,
   timestamp,
   primaryKey,
+  decimal,
 } from "drizzle-orm/mysql-core";
 import { relations } from "drizzle-orm";
 import { sql } from "drizzle-orm";
@@ -111,6 +112,7 @@ export const templateItems = mysqlTable("template_items", {
   durationMs: int("duration_ms").notNull().default(5000),
   sortOrder: int("sort_order").notNull().default(0),
   transitionType: mysqlEnum("transition_type", ["NONE", "FADE", "SLIDE_LEFT", "SLIDE_UP"]).notNull().default("NONE"),
+  transitionDurationMs: int("transition_duration_ms").notNull().default(350),
 });
 
 export const templateWidgets = mysqlTable("template_widgets", {
@@ -119,6 +121,12 @@ export const templateWidgets = mysqlTable("template_widgets", {
   type: mysqlEnum("type", ["WEATHER_CURRENT"]).notNull(),
   position: mysqlEnum("position", ["TOP_LEFT", "TOP_RIGHT", "BOTTOM_LEFT", "BOTTOM_RIGHT"]).notNull().default("TOP_RIGHT"),
   config: varchar("config", { length: 1024 }).notNull().default("{}"),
+  x: decimal("x", { precision: 5, scale: 4 }).notNull().default("0.8500"),
+  y: decimal("y", { precision: 5, scale: 4 }).notNull().default("0.0400"),
+  w: decimal("w", { precision: 5, scale: 4 }).notNull().default("0.1300"),
+  h: decimal("h", { precision: 5, scale: 4 }).notNull().default("0.1000"),
+  startMs: int("start_ms"),
+  endMs: int("end_ms"),
 });
 
 export const userTemplateFolderAccess = mysqlTable(

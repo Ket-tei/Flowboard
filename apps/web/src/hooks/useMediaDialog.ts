@@ -4,14 +4,15 @@ import type { DragEndEvent } from "@dnd-kit/core";
 import { arrayMove } from "@dnd-kit/sortable";
 import { toast } from "sonner";
 import { apiFetch } from "@/lib/api";
-import type { ScreenRow, ScreenItem, TransitionType } from "@/types/screen.types";
+import type { ScreenRow, ScreenItem } from "@/types/screen.types";
 
 export type PendingItem = {
   localId: string;
   file: File;
   previewUrl: string;
   durationMs: number;
-  transitionType: TransitionType;
+  transitionType?: TransitionType;
+  transitionDurationMs?: number;
 };
 
 export type LocalItem = ScreenItem | PendingItem;
@@ -106,22 +107,12 @@ export function useMediaDialog(onTreeChanged: () => Promise<void>) {
     );
   }
 
-  function updateItemTransition(id: number | string, transitionType: TransitionType) {
-    setLocalItems((prev) =>
-      prev.map((it) => {
-        if (isPendingItem(it)) return it.localId === id ? { ...it, transitionType } : it;
-        return it.id === id ? { ...it, transitionType } : it;
-      })
-    );
-  }
-
   function uploadFiles(files: FileList | File[]) {
     const newItems: PendingItem[] = Array.from(files).map((file) => ({
       localId: `pending-${Date.now()}-${Math.random()}`,
       file,
       previewUrl: URL.createObjectURL(file),
       durationMs: 5000,
-      transitionType: "NONE",
     }));
     setLocalItems((prev) => [...prev, ...newItems]);
   }
@@ -223,7 +214,6 @@ export function useMediaDialog(onTreeChanged: () => Promise<void>) {
     onDragEnd,
     deleteItem,
     updateItemDuration,
-    updateItemTransition,
     uploadFiles,
     saveChanges,
   } as const;
