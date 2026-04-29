@@ -103,3 +103,30 @@ body,
 #root {
   min-height: 100vh;
 }
+
+@keyframes player-fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes player-slide-left {
+  from { transform: translateX(100%); opacity: 0; }
+  to   { transform: translateX(0);    opacity: 1; }
+}
+
+@keyframes player-slide-up {
+  from { transform: translateY(100%); opacity: 0; }
+  to   { transform: translateY(0);    opacity: 1; }
+}
+
+.animate-player-fade-in {
+  animation: player-fade-in 0.35s ease-out both;
+}
+
+.animate-player-slide-left {
+  animation: player-slide-left 0.35s ease-out both;
+}
+
+.animate-player-slide-up {
+  animation: player-slide-up 0.35s ease-out both;
+}

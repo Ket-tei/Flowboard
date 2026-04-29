@@ -114,7 +114,8 @@
     "modeQuick": "Quick display",
     "modeQuickDesc": "Directly plays media added to the screen",
     "modeTemplate": "Template display",
-    "modeTemplateDesc": "Schedules templates on a weekly calendar"
+    "modeTemplateDesc": "Schedules templates on a weekly calendar",
+    "preview": "Preview"
   },
   "templates": {
     "title": "Templates",
@@ -238,6 +239,31 @@
     "step6Desc": "Click here to add or remove widgets and personalise your dashboard view.",
     "step7Title": "You're all set!",
     "step7Desc": "Explore Flowboard at your own pace. You can relaunch this tutorial from the Help tab at any time."
+  },
+  "transitions": {
+    "label": "Transition",
+    "NONE": "None",
+    "FADE": "Fade",
+    "SLIDE_LEFT": "Slide left",
+    "SLIDE_UP": "Slide up"
+  },
+  "templateWidgets": {
+    "title": "Widgets",
+    "add": "Add widget",
+    "remove": "Remove",
+    "WEATHER_CURRENT": "Current weather",
+    "position": "Position",
+    "city": "City",
+    "cityPlaceholder": "Search a city…",
+    "units": "Units",
+    "celsius": "°C",
+    "fahrenheit": "°F",
+    "TOP_LEFT": "Top left",
+    "TOP_RIGHT": "Top right",
+    "BOTTOM_LEFT": "Bottom left",
+    "BOTTOM_RIGHT": "Bottom right",
+    "noWidgets": "No widgets. Add one below.",
+    "adding": "Adding…"
   },
   "show": {
     "missingToken": "Missing token",

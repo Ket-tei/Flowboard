@@ -110,6 +110,15 @@ export const templateItems = mysqlTable("template_items", {
   mimeType: varchar("mime_type", { length: 128 }).notNull(),
   durationMs: int("duration_ms").notNull().default(5000),
   sortOrder: int("sort_order").notNull().default(0),
+  transitionType: mysqlEnum("transition_type", ["NONE", "FADE", "SLIDE_LEFT", "SLIDE_UP"]).notNull().default("NONE"),
+});
+
+export const templateWidgets = mysqlTable("template_widgets", {
+  id: bigint("id", { mode: "number" }).primaryKey().autoincrement(),
+  templateId: bigint("template_id", { mode: "number" }).notNull(),
+  type: mysqlEnum("type", ["WEATHER_CURRENT"]).notNull(),
+  position: mysqlEnum("position", ["TOP_LEFT", "TOP_RIGHT", "BOTTOM_LEFT", "BOTTOM_RIGHT"]).notNull().default("TOP_RIGHT"),
+  config: varchar("config", { length: 1024 }).notNull().default("{}"),
 });
 
 export const userTemplateFolderAccess = mysqlTable(
@@ -166,4 +175,8 @@ export const templatesRelations = relations(templates, ({ one, many }) => ({
 
 export const templateItemsRelations = relations(templateItems, ({ one }) => ({
   template: one(templates, { fields: [templateItems.templateId], references: [templates.id] }),
+}));
+
+export const templateWidgetsRelations = relations(templateWidgets, ({ one }) => ({
+  template: one(templates, { fields: [templateWidgets.templateId], references: [templates.id] }),
 }));

@@ -3,7 +3,16 @@ import { createReadStream } from "node:fs";
 import { stat } from "node:fs/promises";
 import { eq, and, lte, gt } from "drizzle-orm";
 import { db } from "../db/index.js";
-import { screenItems, screens, screenSchedules, templateItems } from "../db/schema.js";
+import { screenItems, screens, screenSchedules, templateItems, templateWidgets } from "../db/schema.js";
+
+function safeParseJson(raw: string): Record<string, unknown> {
+  try {
+    const v = JSON.parse(raw);
+    return v && typeof v === "object" && !Array.isArray(v) ? (v as Record<string, unknown>) : {};
+  } catch {
+    return {};
+  }
+}
 import { resolveFilePath } from "../services/upload.service.js";
 
 export async function registerPublicRoutes(app: FastifyInstance) {
@@ -35,13 +44,19 @@ export async function registerPublicRoutes(app: FastifyInstance) {
         )
         .limit(1);
       if (!slot[0]) {
-        return { revision: scr[0].revision, screenId: scr[0].id, items: [] };
+        return { revision: scr[0].revision, screenId: scr[0].id, items: [], widgets: [] };
       }
-      const tplItems = await db
-        .select()
-        .from(templateItems)
-        .where(eq(templateItems.templateId, slot[0].templateId))
-        .orderBy(templateItems.sortOrder, templateItems.id);
+      const [tplItems, widgets] = await Promise.all([
+        db
+          .select()
+          .from(templateItems)
+          .where(eq(templateItems.templateId, slot[0].templateId))
+          .orderBy(templateItems.sortOrder, templateItems.id),
+        db
+          .select()
+          .from(templateWidgets)
+          .where(eq(templateWidgets.templateId, slot[0].templateId)),
+      ]);
       return {
         revision: scr[0].revision,
         screenId: scr[0].id,
@@ -51,6 +66,13 @@ export async function registerPublicRoutes(app: FastifyInstance) {
           durationMs: it.durationMs,
           mimeType: it.mimeType,
           url: `/api/public/templates/${slot[0].templateId}/media/${it.id}`,
+          transitionType: it.transitionType,
+        })),
+        widgets: widgets.map((w) => ({
+          id: w.id,
+          type: w.type,
+          position: w.position,
+          config: safeParseJson(w.config),
         })),
       };
     }
@@ -69,7 +91,9 @@ export async function registerPublicRoutes(app: FastifyInstance) {
         durationMs: it.durationMs,
         mimeType: it.mimeType,
         url: `/api/public/screens/${encodeURIComponent(token)}/media/${it.id}`,
+        transitionType: "NONE" as const,
       })),
+      widgets: [],
     };
   });
 

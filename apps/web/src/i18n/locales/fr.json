@@ -114,7 +114,8 @@
     "modeQuick": "Affichage rapide",
     "modeQuickDesc": "Diffuse directement les médias ajoutés à l'écran",
     "modeTemplate": "Affichage par modèle",
-    "modeTemplateDesc": "Planifie des modèles sur un calendrier hebdomadaire"
+    "modeTemplateDesc": "Planifie des modèles sur un calendrier hebdomadaire",
+    "preview": "Aperçu"
   },
   "templates": {
     "title": "Modèles",
@@ -238,6 +239,31 @@
     "step6Desc": "Cliquez ici pour ajouter ou supprimer des widgets et personnaliser votre vue du tableau de bord.",
     "step7Title": "Vous êtes prêt !",
     "step7Desc": "Explorez Flowboard à votre rythme. Vous pouvez relancer ce tutoriel depuis l'onglet Aide à tout moment."
+  },
+  "transitions": {
+    "label": "Transition",
+    "NONE": "Aucune",
+    "FADE": "Fondu",
+    "SLIDE_LEFT": "Glissement gauche",
+    "SLIDE_UP": "Glissement haut"
+  },
+  "templateWidgets": {
+    "title": "Widgets",
+    "add": "Ajouter un widget",
+    "remove": "Supprimer",
+    "WEATHER_CURRENT": "Météo actuelle",
+    "position": "Position",
+    "city": "Ville",
+    "cityPlaceholder": "Rechercher une ville…",
+    "units": "Unités",
+    "celsius": "°C",
+    "fahrenheit": "°F",
+    "TOP_LEFT": "Haut gauche",
+    "TOP_RIGHT": "Haut droite",
+    "BOTTOM_LEFT": "Bas gauche",
+    "BOTTOM_RIGHT": "Bas droite",
+    "noWidgets": "Aucun widget. Ajoutez-en un ci-dessous.",
+    "adding": "Ajout…"
   },
   "show": {
     "missingToken": "Jeton manquant",

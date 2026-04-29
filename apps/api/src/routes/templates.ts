@@ -12,6 +12,7 @@ import {
   templateFolders,
   templates,
   templateItems,
+  templateWidgets,
   userTemplateFolderAccess,
   userTemplateAccess,
 } from "../db/schema.js";
@@ -52,8 +53,28 @@ const reorderItemsSchema = z.object({
   orderedIds: z.array(z.number().int().positive()).min(1),
 });
 
+const TRANSITION_VALUES = ["NONE", "FADE", "SLIDE_LEFT", "SLIDE_UP"] as const;
+const WIDGET_POSITIONS = ["TOP_LEFT", "TOP_RIGHT", "BOTTOM_LEFT", "BOTTOM_RIGHT"] as const;
+const WIDGET_TYPES = ["WEATHER_CURRENT"] as const;
+
 const updateItemSchema = z.object({
-  durationMs: z.number().int().min(0),
+  durationMs: z.number().int().min(0).optional(),
+  transitionType: z.enum(TRANSITION_VALUES).optional(),
+}).refine((d) => Object.values(d).some((v) => v !== undefined), {
+  message: "at least one field required",
+});
+
+const createWidgetSchema = z.object({
+  type: z.enum(WIDGET_TYPES),
+  position: z.enum(WIDGET_POSITIONS).default("TOP_RIGHT"),
+  config: z.record(z.string(), z.unknown()).default({}),
+});
+
+const updateWidgetSchema = z.object({
+  position: z.enum(WIDGET_POSITIONS).optional(),
+  config: z.record(z.string(), z.unknown()).optional(),
+}).refine((d) => Object.values(d).some((v) => v !== undefined), {
+  message: "at least one field required",
 });
 
 type FolderRow = typeof templateFolders.$inferSelect;
@@ -98,6 +119,15 @@ async function canAccessTemplate(userId: number, role: string, templateId: numbe
 
 async function bumpTemplateRevision(templateId: number): Promise<void> {
   await db.update(templates).set({ revision: sql`${templates.revision} + 1` }).where(eq(templates.id, templateId));
+}
+
+function safeParseJson(raw: string): Record<string, unknown> {
+  try {
+    const v = JSON.parse(raw);
+    return v && typeof v === "object" && !Array.isArray(v) ? (v as Record<string, unknown>) : {};
+  } catch {
+    return {};
+  }
 }
 
 export async function registerTemplateRoutes(app: FastifyInstance) {
@@ -229,6 +259,7 @@ export async function registerTemplateRoutes(app: FastifyInstance) {
     const items = await db.select().from(templateItems)
       .where(eq(templateItems.templateId, id))
       .orderBy(templateItems.sortOrder, templateItems.id);
+    const widgets = await db.select().from(templateWidgets).where(eq(templateWidgets.templateId, id));
     return {
       screen: {
         id: tpl[0].id,
@@ -246,6 +277,13 @@ export async function registerTemplateRoutes(app: FastifyInstance) {
         durationMs: it.durationMs,
         sortOrder: it.sortOrder,
         mimeType: it.mimeType,
+        transitionType: it.transitionType,
+      })),
+      widgets: widgets.map((w) => ({
+        id: w.id,
+        type: w.type,
+        position: w.position,
+        config: safeParseJson(w.config),
       })),
     };
   });
@@ -282,8 +320,11 @@ export async function registerTemplateRoutes(app: FastifyInstance) {
     }
     const mp = await request.file();
     if (!mp) return reply.status(400).send({ error: "file required" });
-    const q = request.query as { durationMs?: string };
+    const q = request.query as { durationMs?: string; transitionType?: string };
     const durationMs = Number(q.durationMs ?? 5000) || 5000;
+    const transitionType = (TRANSITION_VALUES as readonly string[]).includes(q.transitionType ?? "")
+      ? (q.transitionType as typeof TRANSITION_VALUES[number])
+      : "NONE";
 
     const mime = mp.mimetype ?? "application/octet-stream";
     const kind = mimeToMediaType(mime);
@@ -304,11 +345,11 @@ export async function registerTemplateRoutes(app: FastifyInstance) {
       .limit(1);
     const nextOrder = (maxOrder[0]?.sortOrder ?? -1) + 1;
 
-    await db.insert(templateItems).values({ templateId, type: kind, storageKey, mimeType: mime, durationMs, sortOrder: nextOrder });
+    await db.insert(templateItems).values({ templateId, type: kind, storageKey, mimeType: mime, durationMs, sortOrder: nextOrder, transitionType });
     const [lid] = await pool.query("SELECT LAST_INSERT_ID() AS id");
     const itemId = Number((lid as { id: number }[])[0]?.id);
     await bumpTemplateRevision(templateId);
-    return { id: itemId, type: kind, durationMs, sortOrder: nextOrder, mimeType: mime };
+    return { id: itemId, type: kind, durationMs, sortOrder: nextOrder, mimeType: mime, transitionType };
   });
 
   app.patch("/templates/:id/items/order", { preHandler: authPreHandler }, async (request, reply) => {
@@ -342,7 +383,10 @@ export async function registerTemplateRoutes(app: FastifyInstance) {
     const input = validate(updateItemSchema, request.body);
     const row = await db.select().from(templateItems).where(eq(templateItems.id, itemId)).limit(1);
     if (!row[0] || row[0].templateId !== templateId) return reply.status(404).send({ error: "item not found" });
-    await db.update(templateItems).set({ durationMs: input.durationMs }).where(eq(templateItems.id, itemId));
+    const updates: Partial<{ durationMs: number; transitionType: typeof TRANSITION_VALUES[number] }> = {};
+    if (input.durationMs !== undefined) updates.durationMs = input.durationMs;
+    if (input.transitionType !== undefined) updates.transitionType = input.transitionType;
+    await db.update(templateItems).set(updates).where(eq(templateItems.id, itemId));
     await bumpTemplateRevision(templateId);
     return { ok: true };
   });
@@ -361,6 +405,65 @@ export async function registerTemplateRoutes(app: FastifyInstance) {
     if (!row[0] || row[0].templateId !== templateId) return reply.status(404).send({ error: "item not found" });
     await deleteFile(row[0].storageKey);
     await db.delete(templateItems).where(eq(templateItems.id, itemId));
+    await bumpTemplateRevision(templateId);
+    return { ok: true };
+  });
+
+  // --- Template widgets ---
+  app.post("/templates/:id/widgets", { preHandler: authPreHandler }, async (request, reply) => {
+    const u = request.authUser!;
+    const templateId = Number((request.params as { id: string }).id);
+    if (!Number.isFinite(templateId)) return reply.status(400).send({ error: "invalid id" });
+    if (!(await canAccessTemplate(u.sub, u.role, templateId))) {
+      return reply.status(403).send({ error: "Forbidden" });
+    }
+    const input = validate(createWidgetSchema, request.body);
+    await db.insert(templateWidgets).values({
+      templateId,
+      type: input.type,
+      position: input.position,
+      config: JSON.stringify(input.config),
+    });
+    const [lid] = await pool.query("SELECT LAST_INSERT_ID() AS id");
+    const id = Number((lid as { id: number }[])[0]?.id);
+    await bumpTemplateRevision(templateId);
+    return { id, type: input.type, position: input.position, config: input.config };
+  });
+
+  app.patch("/templates/:id/widgets/:widgetId", { preHandler: authPreHandler }, async (request, reply) => {
+    const u = request.authUser!;
+    const templateId = Number((request.params as { id: string }).id);
+    const widgetId = Number((request.params as { widgetId: string }).widgetId);
+    if (!Number.isFinite(templateId) || !Number.isFinite(widgetId)) {
+      return reply.status(400).send({ error: "invalid id" });
+    }
+    if (!(await canAccessTemplate(u.sub, u.role, templateId))) {
+      return reply.status(403).send({ error: "Forbidden" });
+    }
+    const input = validate(updateWidgetSchema, request.body);
+    const row = await db.select().from(templateWidgets).where(eq(templateWidgets.id, widgetId)).limit(1);
+    if (!row[0] || row[0].templateId !== templateId) return reply.status(404).send({ error: "widget not found" });
+    const updates: Partial<{ position: typeof WIDGET_POSITIONS[number]; config: string }> = {};
+    if (input.position !== undefined) updates.position = input.position;
+    if (input.config !== undefined) updates.config = JSON.stringify(input.config);
+    await db.update(templateWidgets).set(updates).where(eq(templateWidgets.id, widgetId));
+    await bumpTemplateRevision(templateId);
+    return { ok: true };
+  });
+
+  app.delete("/templates/:id/widgets/:widgetId", { preHandler: authPreHandler }, async (request, reply) => {
+    const u = request.authUser!;
+    const templateId = Number((request.params as { id: string }).id);
+    const widgetId = Number((request.params as { widgetId: string }).widgetId);
+    if (!Number.isFinite(templateId) || !Number.isFinite(widgetId)) {
+      return reply.status(400).send({ error: "invalid id" });
+    }
+    if (!(await canAccessTemplate(u.sub, u.role, templateId))) {
+      return reply.status(403).send({ error: "Forbidden" });
+    }
+    const row = await db.select().from(templateWidgets).where(eq(templateWidgets.id, widgetId)).limit(1);
+    if (!row[0] || row[0].templateId !== templateId) return reply.status(404).send({ error: "widget not found" });
+    await db.delete(templateWidgets).where(eq(templateWidgets.id, widgetId));
     await bumpTemplateRevision(templateId);
     return { ok: true };
   });
