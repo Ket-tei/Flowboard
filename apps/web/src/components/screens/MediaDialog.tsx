@@ -269,7 +269,6 @@ export function MediaDialog({
   onChangeMode,
   widgets,
   onAddWidget,
-  onUpdateWidget,
   onRemoveWidget,
   isTemplate = false,
 }: {
@@ -292,7 +291,6 @@ export function MediaDialog({
   onChangeMode?: (mode: "QUICK" | "TEMPLATE") => void;
   widgets?: TemplateWidget[];
   onAddWidget?: (w: Omit<TemplateWidget, "id">) => Promise<void>;
-  onUpdateWidget?: (id: number, updates: Partial<Pick<TemplateWidget, "position" | "config">>) => Promise<void>;
   onRemoveWidget?: (id: number) => Promise<void>;
   isTemplate?: boolean;
 }) {

@@ -13,7 +13,7 @@ export function localItemsToPreview(
   items: LocalItem[],
   opts: { screenToken?: string; templateId?: number }
 ): PlayerItem[] {
-  return items.map((it, idx) => {
+  return items.map((it) => {
     if (isPendingItem(it)) {
       return {
         id: it.localId,
