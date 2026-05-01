@@ -4,7 +4,7 @@ import type { DragEndEvent } from "@dnd-kit/core";
 import { arrayMove } from "@dnd-kit/sortable";
 import { toast } from "sonner";
 import { apiFetch } from "@/lib/api";
-import type { ScreenRow, ScreenItem } from "@/types/screen.types";
+import type { ScreenRow, ScreenItem, TransitionType } from "@/types/screen.types";
 
 export type PendingItem = {
   localId: string;
