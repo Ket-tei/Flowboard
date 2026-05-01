@@ -179,18 +179,19 @@ export function ScreensPage() {
             <div className="flex items-center gap-2">
               <Button
                 type="button"
-                variant="outline"
+                variant="ghost"
                 size="sm"
-                className="h-9 gap-1.5 rounded-full px-4 text-xs"
+                className="h-8 gap-1.5 rounded-full px-3 text-xs text-muted-foreground hover:text-foreground"
                 onClick={() => openCreateDialog("folder", null)}
+                title={t("screens.addFolder")}
               >
                 <FolderPlus className="size-3.5" />
-                {t("screens.addFolder")}
+                <span className="hidden sm:inline">{t("screens.addFolder")}</span>
               </Button>
               <Button
                 type="button"
                 size="sm"
-                className="h-9 gap-1.5 rounded-full px-4 text-xs"
+                className="h-8 gap-1.5 rounded-full px-3 text-xs"
                 onClick={() => openCreateDialog("screen", null)}
               >
                 <Plus className="size-3.5" />

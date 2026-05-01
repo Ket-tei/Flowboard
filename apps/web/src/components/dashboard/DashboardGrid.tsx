@@ -20,11 +20,13 @@ export function DashboardGrid({
   data,
   onReorder,
   onRemove,
+  editMode = false,
 }: {
   layout: WidgetLayoutItem[];
   data: any;
   onReorder: (from: number, to: number) => void;
   onRemove: (widgetId: string) => void;
+  editMode?: boolean;
 }) {
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
@@ -53,6 +55,7 @@ export function DashboardGrid({
               widgetId={item.widgetId}
               data={data}
               onRemove={() => onRemove(item.widgetId)}
+              showRemove={editMode}
             />
           ))}
         </div>

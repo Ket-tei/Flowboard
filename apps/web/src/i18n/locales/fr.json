@@ -37,6 +37,7 @@
     "add": "Ajouter",
     "close": "Fermer",
     "savingLayout": "Sauvegarde…",
+    "customise": "Personnaliser",
     "widgets": {
       "screenCount": "Écrans",
       "screenCountDesc": "Nombre total d'écrans",
@@ -282,7 +283,13 @@
     "weatherLabel": "Météo",
     "celsius": "Celsius (°C)",
     "fahrenheit": "Fahrenheit (°F)",
-    "noMedia": "Ajoutez un média pour commencer"
+    "noMedia": "Ajoutez un média pour commencer",
+    "addMedia": "Ajouter un média",
+    "mediaLabel": "Médias",
+    "widgetLabel": "Widget {{n}}",
+    "widgetLabelEmpty": "Widget",
+    "unsavedIndicator": "non enregistré",
+    "dropFiles": "Déposer des fichiers ici"
   },
   "show": {
     "missingToken": "Jeton manquant",

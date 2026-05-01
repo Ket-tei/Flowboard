@@ -15,10 +15,12 @@ export function WidgetCard({
   widgetId,
   data,
   onRemove,
+  showRemove = true,
 }: {
   widgetId: string;
   data: any;
   onRemove: () => void;
+  showRemove?: boolean;
 }) {
   const { t } = useTranslation();
   const def = getWidgetDef(widgetId);
@@ -65,13 +67,15 @@ export function WidgetCard({
         <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex-1 truncate">
           {t(def.titleKey)}
         </span>
-        <button
-          onClick={onRemove}
-          className="rounded-full p-1 text-muted-foreground/50 hover:text-destructive hover:bg-destructive/10 opacity-0 group-hover:opacity-100 transition-opacity"
-          title={t("dashboard.removeWidget")}
-        >
-          <X className="size-3.5" />
-        </button>
+        {showRemove && (
+          <button
+            onClick={onRemove}
+            className="rounded-full p-1 text-muted-foreground/50 hover:text-destructive hover:bg-destructive/10 opacity-0 group-hover:opacity-100 transition-opacity"
+            title={t("dashboard.removeWidget")}
+          >
+            <X className="size-3.5" />
+          </button>
+        )}
       </div>
       <div className="flex-1 px-4 pb-3">
         <Suspense

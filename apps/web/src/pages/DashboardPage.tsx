@@ -1,10 +1,9 @@
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { LayoutGrid, Plus, RotateCcw } from "lucide-react";
+import { LayoutGrid, Plus, RotateCcw, SlidersHorizontal } from "lucide-react";
 import { useDashboard } from "@/hooks/useDashboard";
 import { DashboardGrid } from "@/components/dashboard/DashboardGrid";
 import { WidgetPicker } from "@/components/dashboard/WidgetPicker";
-import { Button } from "@/components/ui/button";
 
 function SkeletonGrid() {
   return (
@@ -28,6 +27,7 @@ function SkeletonGrid() {
 
 export function DashboardPage() {
   const { t } = useTranslation();
+  const [editMode, setEditMode] = useState(false);
   const [showPicker, setShowPicker] = useState(false);
 
   const {
@@ -58,31 +58,53 @@ export function DashboardPage() {
               <p className="text-xs text-muted-foreground truncate">{t("dashboard.subtitle")}</p>
             </div>
           </div>
-          <div className="flex gap-2 shrink-0">
-            <Button
-              variant="outline"
-              size="sm"
-              className="h-8 rounded-full text-xs gap-1.5"
-              onClick={resetLayout}
+
+          {/* Single "Personalise" toggle — only shows when layout is non-empty */}
+          {!loading && layout.length > 0 && (
+            <button
+              type="button"
+              onClick={() => {
+                setEditMode((e) => !e);
+                if (editMode) setShowPicker(false);
+              }}
+              className={[
+                "flex h-8 shrink-0 items-center gap-1.5 rounded-full border px-3 text-xs font-medium transition-colors",
+                editMode
+                  ? "border-primary/60 bg-primary/10 text-primary"
+                  : "border-border/60 bg-transparent text-muted-foreground hover:bg-muted/50 hover:text-foreground",
+              ].join(" ")}
             >
-              <RotateCcw className="size-3.5" />
-              {t("dashboard.resetLayout")}
-            </Button>
-            <Button
-              size="sm"
-              className="h-8 rounded-full text-xs gap-1.5"
-              onClick={() => setShowPicker(!showPicker)}
-              data-tutorial="dashboard-add-widget"
-            >
-              <Plus className="size-3.5" />
-              {t("dashboard.addWidget")}
-            </Button>
-          </div>
+              <SlidersHorizontal className="size-3.5" />
+              {t("dashboard.customise")}
+            </button>
+          )}
         </div>
+
+        {/* Edit mode toolbar — appears inline below header content */}
+        {editMode && (
+          <div className="mt-3 flex items-center gap-2 border-t border-border/40 pt-3">
+            <button
+              type="button"
+              onClick={() => setShowPicker((s) => !s)}
+              className="flex h-7 items-center gap-1.5 rounded-full bg-primary px-3 text-xs font-medium text-primary-foreground hover:bg-primary/90 transition-colors"
+            >
+              <Plus className="size-3" />
+              {t("dashboard.addWidget")}
+            </button>
+            <button
+              type="button"
+              onClick={() => { resetLayout(); setEditMode(false); }}
+              className="flex h-7 items-center gap-1.5 rounded-full border border-border/60 bg-transparent px-3 text-xs text-muted-foreground hover:bg-muted/50 transition-colors"
+            >
+              <RotateCcw className="size-3" />
+              {t("dashboard.resetLayout")}
+            </button>
+          </div>
+        )}
       </div>
 
-      {/* Widget picker */}
-      {showPicker && (
+      {/* Widget picker — inline, not modal */}
+      {showPicker && editMode && (
         <WidgetPicker
           role={role as "ADMIN" | "USER"}
           activeIds={activeIds}
@@ -104,7 +126,15 @@ export function DashboardPage() {
       ) : layout.length === 0 ? (
         <div className="rounded-xl border border-border/60 bg-card px-6 py-16 text-center">
           <LayoutGrid className="mx-auto size-10 text-muted-foreground/30 mb-3" />
-          <p className="text-sm text-muted-foreground">{t("dashboard.noWidgets")}</p>
+          <p className="text-sm text-muted-foreground mb-4">{t("dashboard.noWidgets")}</p>
+          <button
+            type="button"
+            onClick={() => { setEditMode(true); setShowPicker(true); }}
+            className="inline-flex h-8 items-center gap-1.5 rounded-full bg-primary px-4 text-xs font-medium text-primary-foreground hover:bg-primary/90 transition-colors"
+          >
+            <Plus className="size-3" />
+            {t("dashboard.addWidget")}
+          </button>
         </div>
       ) : (
         <DashboardGrid
@@ -112,6 +142,7 @@ export function DashboardPage() {
           data={stats}
           onReorder={reorderWidgets}
           onRemove={removeWidget}
+          editMode={editMode}
         />
       )}
     </div>
