@@ -32,10 +32,23 @@ const MEDIA_COLORS: Record<string, string> = {
 
 function getMediaColor(item: LocalItem): string {
   if (isPendingItem(item)) {
-    const isVideo = item.file.type.startsWith("video/");
-    return isVideo ? MEDIA_COLORS.VIDEO : MEDIA_COLORS.IMAGE;
+    return item.file.type.startsWith("video/") ? MEDIA_COLORS.VIDEO : MEDIA_COLORS.IMAGE;
   }
   return MEDIA_COLORS[item.type] ?? "var(--primary)";
+}
+
+function getItemTransitionType(item: LocalItem): TransitionType {
+  if (isPendingItem(item)) return item.transitionType ?? "NONE";
+  return (item as ScreenItem).transitionType ?? "NONE";
+}
+
+function getItemTransitionDuration(item: LocalItem): number {
+  if (isPendingItem(item)) return item.transitionDurationMs ?? 350;
+  return (item as ScreenItem).transitionDurationMs ?? 350;
+}
+
+function getItemId(item: LocalItem): number | string {
+  return isPendingItem(item) ? item.localId : item.id;
 }
 
 function SortableMediaBlock({
@@ -80,7 +93,7 @@ function SortableMediaBlock({
         color={color}
         label={label}
         sublabel={sublabel}
-        onResize={(newW) => onResize(isPendingItem(item) ? item.localId : item.id, newW)}
+        onResize={(newW) => onResize(getItemId(item), newW)}
       >
         <div style={{ overflow: "hidden", flex: 1, minWidth: 0 }}>
           <div style={{ fontSize: 11, fontWeight: 600, color: "#fff", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
@@ -90,7 +103,6 @@ function SortableMediaBlock({
             {sublabel}
           </div>
         </div>
-        {/* Drag handle */}
         <div
           {...listeners}
           style={{
@@ -241,6 +253,7 @@ export function Timeline({
             gap: 4,
             flex: 1,
             overflowX: "auto",
+            overflowY: "visible",
             padding: "0 8px 0 0",
           }}
         >
@@ -249,11 +262,6 @@ export function Timeline({
               {items.map((item, idx) => {
                 const isLast = idx === items.length - 1;
                 const nextItem = items[idx + 1];
-                const showTransition =
-                  !isLast &&
-                  !isPendingItem(item) &&
-                  nextItem &&
-                  !isPendingItem(nextItem);
 
                 return (
                   <div
@@ -267,16 +275,13 @@ export function Timeline({
                         onUpdateDuration(id, Math.max(MIN_DURATION_MS, Math.round(newPx / PX_PER_MS)))
                       }
                     />
-                    {showTransition && !isPendingItem(item) && nextItem && !isPendingItem(nextItem) && (
+                    {/* Show transition after EVERY item except the last */}
+                    {!isLast && nextItem && (
                       <InlineTransitionBlock
-                        transitionType={(nextItem as ScreenItem).transitionType ?? "NONE"}
-                        transitionDurationMs={(nextItem as ScreenItem).transitionDurationMs ?? 350}
-                        onChangeType={(type) =>
-                          onUpdateTransition((nextItem as ScreenItem).id, type)
-                        }
-                        onChangeDuration={(ms) =>
-                          onUpdateTransitionDuration((nextItem as ScreenItem).id, ms)
-                        }
+                        transitionType={getItemTransitionType(nextItem)}
+                        transitionDurationMs={getItemTransitionDuration(nextItem)}
+                        onChangeType={(type) => onUpdateTransition(getItemId(nextItem), type)}
+                        onChangeDuration={(ms) => onUpdateTransitionDuration(getItemId(nextItem), ms)}
                       />
                     )}
                   </div>
@@ -333,18 +338,20 @@ export function Timeline({
         </div>
       </div>
 
-      {/* Widget tracks */}
-      {trackList.map((track, ti) => (
-        <WidgetTrack
-          key={ti}
-          trackIndex={ti}
-          widgets={track}
-          totalDurationMs={totalDurationMs}
-          onUpdateTiming={onUpdateWidgetTiming}
-          onRemove={onRemoveWidget}
-          onAdd={onAddWidget}
-        />
-      ))}
+      {/* Widget tracks — overflow visible so the picker popup isn't clipped */}
+      <div style={{ overflowY: "visible" }}>
+        {trackList.map((track, ti) => (
+          <WidgetTrack
+            key={ti}
+            trackIndex={ti}
+            widgets={track}
+            totalDurationMs={totalDurationMs}
+            onUpdateTiming={onUpdateWidgetTiming}
+            onRemove={onRemoveWidget}
+            onAdd={onAddWidget}
+          />
+        ))}
+      </div>
     </div>
   );
 }

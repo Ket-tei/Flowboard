@@ -1,9 +1,11 @@
-import { useState } from "react";
+import { useRef, useState, useCallback } from "react";
 import { MonitorPlay } from "lucide-react";
 import type { PlayerItem } from "@/components/show/ScreenPlayer";
 import { ScreenPlayer } from "@/components/show/ScreenPlayer";
 import type { TemplateWidget } from "@/types/screen.types";
 import { EditableWidgetOverlay } from "./EditableWidgetOverlay";
+
+const MIN_PREVIEW_WIDTH = 240;
 
 export function LivePreview({
   items,
@@ -16,6 +18,9 @@ export function LivePreview({
 }) {
   const [currentMs, setCurrentMs] = useState(0);
   const [selectedWidgetId, setSelectedWidgetId] = useState<number | null>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  // null = auto (fills container). A pixel value = user-set width.
+  const [previewWidthPx, setPreviewWidthPx] = useState<number | null>(null);
 
   const visibleWidgets = widgets.filter((w) => {
     if (w.startMs !== null && currentMs < w.startMs) return false;
@@ -23,14 +28,49 @@ export function LivePreview({
     return true;
   });
 
+  const startHResize = useCallback((side: "left" | "right") => (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const startX = e.clientX;
+    const containerRect = containerRef.current?.getBoundingClientRect();
+    if (!containerRect) return;
+
+    // Get the current effective width of the 16:9 box
+    const currentW = previewWidthPx ?? (containerRect.width * 0.9);
+
+    const onMove = (ev: MouseEvent) => {
+      const containerW = containerRef.current?.getBoundingClientRect().width ?? containerRect.width;
+      const maxW = containerW - 16; // leave a small margin
+      const delta = ev.clientX - startX;
+      // Right handle: drag right = wider. Left handle: drag left = wider (inverted).
+      const newW = side === "right"
+        ? Math.min(maxW, Math.max(MIN_PREVIEW_WIDTH, currentW + delta))
+        : Math.min(maxW, Math.max(MIN_PREVIEW_WIDTH, currentW - delta));
+      setPreviewWidthPx(newW);
+    };
+
+    const onUp = () => {
+      window.removeEventListener("mousemove", onMove);
+      window.removeEventListener("mouseup", onUp);
+    };
+
+    window.addEventListener("mousemove", onMove);
+    window.addEventListener("mouseup", onUp);
+  }, [previewWidthPx]);
+
+  const previewStyle: React.CSSProperties = previewWidthPx
+    ? { width: previewWidthPx, aspectRatio: "16 / 9" }
+    : { width: "90%", maxWidth: 860, aspectRatio: "16 / 9" };
+
   return (
     <div
-      className="relative flex h-full w-full items-center justify-center bg-black"
+      ref={containerRef}
+      className="relative flex h-full w-full items-center justify-center bg-black select-none"
       onClick={() => setSelectedWidgetId(null)}
     >
       <div
-        className="relative w-full max-w-3xl overflow-hidden rounded-lg bg-muted shadow-2xl"
-        style={{ aspectRatio: "16 / 9" }}
+        className="relative overflow-hidden rounded-lg bg-muted shadow-2xl"
+        style={previewStyle}
       >
         {items.length === 0 ? (
           <div className="absolute inset-0 flex flex-col items-center justify-center gap-2">
@@ -50,6 +90,21 @@ export function LivePreview({
             onChange={(geom) => onWidgetChange(w.id, geom)}
           />
         ))}
+
+        {/* Left resize handle */}
+        <div
+          onMouseDown={startHResize("left")}
+          className="absolute left-0 top-0 h-full w-2 cursor-ew-resize opacity-0 hover:opacity-100 transition-opacity"
+          style={{ background: "linear-gradient(to right, rgba(255,255,255,0.25), transparent)" }}
+          onClick={(e) => e.stopPropagation()}
+        />
+        {/* Right resize handle */}
+        <div
+          onMouseDown={startHResize("right")}
+          className="absolute right-0 top-0 h-full w-2 cursor-ew-resize opacity-0 hover:opacity-100 transition-opacity"
+          style={{ background: "linear-gradient(to left, rgba(255,255,255,0.25), transparent)" }}
+          onClick={(e) => e.stopPropagation()}
+        />
       </div>
     </div>
   );

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useCallback } from "react";
+import { useEffect, useRef, useCallback, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { ArrowLeft, Save } from "lucide-react";
@@ -12,6 +12,10 @@ import type { TransitionType } from "@/types/screen.types";
 import { msToLabel } from "@/lib/timeline";
 import { cn } from "@/lib/utils";
 
+const TIMELINE_MIN_H = 100;
+const TIMELINE_MAX_H = 480;
+const TIMELINE_DEFAULT_H = 220;
+
 export function TemplateEditorPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -19,6 +23,10 @@ export function TemplateEditorPage() {
   const tree = useTemplateTree();
   const editor = useTemplateEditor(tree.loadTree);
   const nameInputRef = useRef<HTMLInputElement>(null);
+
+  // Vertical split: height of the timeline pane in px
+  const [timelineH, setTimelineH] = useState(TIMELINE_DEFAULT_H);
+  const bodyRef = useRef<HTMLDivElement>(null);
 
   const templateId = Number(id);
 
@@ -42,6 +50,33 @@ export function TemplateEditorPage() {
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [handleKeyDown]);
+
+  // Vertical splitter drag
+  const startVDrag = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    const startY = e.clientY;
+    const startH = timelineH;
+
+    const onMove = (ev: MouseEvent) => {
+      const bodyH = bodyRef.current?.getBoundingClientRect().height ?? window.innerHeight;
+      const delta = startY - ev.clientY; // drag up = bigger timeline
+      const newH = Math.min(
+        TIMELINE_MAX_H,
+        Math.max(TIMELINE_MIN_H, startH + delta)
+      );
+      // Never let timeline exceed 75% of body
+      const maxAllowed = Math.floor(bodyH * 0.75);
+      setTimelineH(Math.min(newH, maxAllowed));
+    };
+
+    const onUp = () => {
+      window.removeEventListener("mousemove", onMove);
+      window.removeEventListener("mouseup", onUp);
+    };
+
+    window.addEventListener("mousemove", onMove);
+    window.addEventListener("mouseup", onUp);
+  }, [timelineH]);
 
   const totalDurationMs = editor.localItems
     .filter((it) => !isPendingItem(it))
@@ -78,7 +113,6 @@ export function TemplateEditorPage() {
           <ArrowLeft className="size-4" />
         </button>
 
-        {/* Inline name input — minimal border until focused */}
         <input
           ref={nameInputRef}
           value={editor.editedName}
@@ -89,7 +123,6 @@ export function TemplateEditorPage() {
           )}
         />
 
-        {/* Duration + dirty indicator */}
         <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
           <span>{msToLabel(totalDurationMs)}</span>
           {editor.hasChanges && (
@@ -129,32 +162,54 @@ export function TemplateEditorPage() {
         </div>
       </header>
 
-      {/* ── Preview (flex-1) ── */}
-      <div className="min-h-0 flex-1">
-        <LivePreview
-          items={previewItems}
-          widgets={editor.widgets}
-          onWidgetChange={editor.updateWidgetGeometry}
-        />
-      </div>
+      {/* ── Body (preview + splitter + timeline) ── */}
+      <div ref={bodyRef} className="flex min-h-0 flex-1 flex-col overflow-hidden">
+        {/* Preview — takes remaining space */}
+        <div className="min-h-0 flex-1">
+          <LivePreview
+            items={previewItems}
+            widgets={editor.widgets}
+            onWidgetChange={editor.updateWidgetGeometry}
+          />
+        </div>
 
-      {/* ── Timeline ── */}
-      <Timeline
-        items={editor.localItems}
-        itemIds={editor.itemIds}
-        templateId={templateId}
-        fileInputRef={editor.fileInputRef}
-        widgets={editor.widgets}
-        totalDurationMs={totalDurationMs}
-        onDragEnd={editor.onDragEnd}
-        onUpdateDuration={editor.updateItemDuration}
-        onUpdateTransition={(id, type) => editor.updateItemTransition(id, type as TransitionType)}
-        onUpdateTransitionDuration={editor.updateItemTransitionDuration}
-        onUploadFiles={editor.uploadFiles}
-        onUpdateWidgetTiming={editor.updateWidgetTiming}
-        onRemoveWidget={(widgetId) => void editor.removeWidget(widgetId)}
-        onAddWidget={editor.addWidget}
-      />
+        {/* ── Vertical splitter ── */}
+        <div
+          onMouseDown={startVDrag}
+          className="group relative z-10 flex h-[5px] w-full shrink-0 cursor-row-resize select-none items-center justify-center bg-border/40 hover:bg-primary/40 transition-colors"
+          title="Redimensionner"
+        >
+          {/* Visual dots */}
+          <div className="flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+            {[0, 1, 2, 3, 4].map((i) => (
+              <span key={i} className="size-0.5 rounded-full bg-primary/60" />
+            ))}
+          </div>
+        </div>
+
+        {/* ── Timeline — fixed height controlled by drag ── */}
+        <div
+          style={{ height: timelineH, overflowY: "auto" }}
+          className="shrink-0"
+        >
+          <Timeline
+            items={editor.localItems}
+            itemIds={editor.itemIds}
+            templateId={templateId}
+            fileInputRef={editor.fileInputRef}
+            widgets={editor.widgets}
+            totalDurationMs={totalDurationMs}
+            onDragEnd={editor.onDragEnd}
+            onUpdateDuration={editor.updateItemDuration}
+            onUpdateTransition={(id, type) => editor.updateItemTransition(id, type as TransitionType)}
+            onUpdateTransitionDuration={editor.updateItemTransitionDuration}
+            onUploadFiles={editor.uploadFiles}
+            onUpdateWidgetTiming={editor.updateWidgetTiming}
+            onRemoveWidget={(widgetId) => void editor.removeWidget(widgetId)}
+            onAddWidget={editor.addWidget}
+          />
+        </div>
+      </div>
     </div>
   );
 }
