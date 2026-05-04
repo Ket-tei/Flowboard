@@ -33,11 +33,27 @@ function randomSecret(len = 64) {
   return crypto.randomBytes(len).toString("hex").slice(0, len);
 }
 
+// Escape a value for use inside a YAML double-quoted string rendered by docker-compose.
+// Handles: backslash (YAML), double-quote (YAML), dollar sign (docker-compose expansion).
+function yamlDqEscape(value) {
+  return String(value)
+    .replace(/\\/g, "\\\\")
+    .replace(/"/g, '\\"')
+    .replace(/\$/g, "$$$$"); // $$ in JS replace = literal $, so $$$$ = $$
+}
+
+// Keys whose values land inside a YAML double-quoted string and need escaping.
+const YAML_DQ_KEYS = new Set([
+  "MYSQL_ROOT_PASSWORD", "MYSQL_PASSWORD", "JWT_SECRET",
+  "ADMIN_EMAIL", "ADMIN_PASSWORD",
+]);
+
 async function renderTemplate(slug, vars) {
   const tplPath = path.join(__provisionerDir, "instance-template", "docker-compose.yml.tpl");
   let tpl = await readFile(tplPath, "utf8");
   for (const [key, value] of Object.entries(vars)) {
-    tpl = tpl.replaceAll(`{{${key}}}`, value);
+    const safe = YAML_DQ_KEYS.has(key) ? yamlDqEscape(value) : value;
+    tpl = tpl.replaceAll(`{{${key}}}`, safe);
   }
   return tpl;
 }

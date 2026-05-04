@@ -18,7 +18,7 @@
   "login": {
     "welcome": "Accédez à votre espace pour gérer les diaporamas.",
     "title": "Connexion",
-    "username": "Nom d'utilisateur",
+    "username": "Email",
     "password": "Mot de passe",
     "submit": "Se connecter",
     "error": "Identifiants invalides",

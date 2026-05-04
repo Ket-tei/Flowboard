@@ -54,7 +54,8 @@ export function LoginPage() {
               </Label>
               <Input
                 id="username"
-                autoComplete="username"
+                type="email"
+                autoComplete="email"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
                 className="h-10 rounded-lg bg-background"

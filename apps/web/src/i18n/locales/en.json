@@ -18,7 +18,7 @@
   "login": {
     "welcome": "Sign in to manage your slideshows.",
     "title": "Sign in",
-    "username": "Username",
+    "username": "Email",
     "password": "Password",
     "submit": "Sign in",
     "error": "Invalid credentials",
