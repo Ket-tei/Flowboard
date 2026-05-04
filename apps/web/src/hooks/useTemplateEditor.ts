@@ -115,7 +115,7 @@ export function useTemplateEditor(onTreeChanged: () => Promise<void>) {
       file,
       previewUrl: URL.createObjectURL(file),
       durationMs: 5000,
-      transitionType: "NONE" as TransitionType,
+      transitionType: "FADE" as TransitionType,
       transitionDurationMs: 350,
     }));
     setLocalItems((prev) => [...prev, ...newItems]);

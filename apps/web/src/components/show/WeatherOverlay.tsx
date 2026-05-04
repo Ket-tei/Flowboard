@@ -66,7 +66,28 @@ export function WeatherOverlay({ widget, inline }: { widget: TemplateWidget; inl
     };
   }, [config.lat, config.lon, config.city, config.units]);
 
-  if (!config.lat || !config.lon || !weather) return null;
+  if (!config.lat || !config.lon || !weather) {
+    const placeholder = (
+      <div className="flex h-full w-full items-center gap-2 rounded-2xl border border-dashed border-white/40 bg-black/30 px-3 py-2 backdrop-blur-sm">
+        <span className="text-2xl opacity-50">🌡️</span>
+        <span className="text-xs text-white/50">Météo</span>
+      </div>
+    );
+    if (inline) return placeholder;
+    return (
+      <div
+        className="absolute z-20"
+        style={{
+          left: `${widget.x * 100}%`,
+          top: `${widget.y * 100}%`,
+          width: `${widget.w * 100}%`,
+          height: `${widget.h * 100}%`,
+        }}
+      >
+        {placeholder}
+      </div>
+    );
+  }
 
   const unit = config.units === "fahrenheit" ? "°F" : "°C";
 

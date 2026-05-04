@@ -59,8 +59,8 @@ export function LivePreview({
   }, [previewWidthPx]);
 
   const previewStyle: React.CSSProperties = previewWidthPx
-    ? { width: previewWidthPx, aspectRatio: "16 / 9" }
-    : { width: "90%", maxWidth: 860, aspectRatio: "16 / 9" };
+    ? { width: previewWidthPx, aspectRatio: "16 / 9", maxHeight: "calc(100% - 1rem)" }
+    : { width: "90%", maxWidth: 860, aspectRatio: "16 / 9", maxHeight: "calc(100% - 1rem)" };
 
   return (
     <div

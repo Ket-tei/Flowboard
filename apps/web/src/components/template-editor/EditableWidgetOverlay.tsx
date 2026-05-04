@@ -76,7 +76,7 @@ export function EditableWidgetOverlay({
   return (
     <div
       ref={containerRef}
-      className={`absolute ${isSelected ? "ring-2 ring-primary ring-offset-1" : "hover:ring-1 hover:ring-primary/40"}`}
+      className={`absolute ${isSelected ? "ring-2 ring-primary ring-offset-1" : "ring-1 ring-white/20 hover:ring-primary/60"}`}
       style={{
         left: `${widget.x * 100}%`,
         top: `${widget.y * 100}%`,

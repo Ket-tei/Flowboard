@@ -259,34 +259,26 @@ export function Timeline({
         >
           <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
             <SortableContext items={itemIds} strategy={horizontalListSortingStrategy}>
-              {items.map((item, idx) => {
-                const isLast = idx === items.length - 1;
-                const nextItem = items[idx + 1];
-
-                return (
-                  <div
-                    key={isPendingItem(item) ? item.localId : String(item.id)}
-                    style={{ display: "flex", alignItems: "center", gap: 4 }}
-                  >
-                    <SortableMediaBlock
-                      item={item}
-                      templateId={templateId}
-                      onResize={(id, newPx) =>
-                        onUpdateDuration(id, Math.max(MIN_DURATION_MS, Math.round(newPx / PX_PER_MS)))
-                      }
-                    />
-                    {/* Show transition after EVERY item except the last */}
-                    {!isLast && nextItem && (
-                      <InlineTransitionBlock
-                        transitionType={getItemTransitionType(nextItem)}
-                        transitionDurationMs={getItemTransitionDuration(nextItem)}
-                        onChangeType={(type) => onUpdateTransition(getItemId(nextItem), type)}
-                        onChangeDuration={(ms) => onUpdateTransitionDuration(getItemId(nextItem), ms)}
-                      />
-                    )}
-                  </div>
-                );
-              })}
+              {items.map((item) => (
+                <div
+                  key={isPendingItem(item) ? item.localId : String(item.id)}
+                  style={{ display: "flex", alignItems: "center", gap: 4 }}
+                >
+                  <SortableMediaBlock
+                    item={item}
+                    templateId={templateId}
+                    onResize={(id, newPx) =>
+                      onUpdateDuration(id, Math.max(MIN_DURATION_MS, Math.round(newPx / PX_PER_MS)))
+                    }
+                  />
+                  <InlineTransitionBlock
+                    transitionType={getItemTransitionType(item)}
+                    transitionDurationMs={getItemTransitionDuration(item)}
+                    onChangeType={(type) => onUpdateTransition(getItemId(item), type)}
+                    onChangeDuration={(ms) => onUpdateTransitionDuration(getItemId(item), ms)}
+                  />
+                </div>
+              ))}
             </SortableContext>
           </DndContext>
 

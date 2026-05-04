@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
   DndContext,
@@ -13,7 +12,7 @@ import {
   sortableKeyboardCoordinates,
   horizontalListSortingStrategy,
 } from "@dnd-kit/sortable";
-import { CalendarDays, MonitorPlay, Eye, Save, Copy } from "lucide-react";
+import { CalendarDays, MonitorPlay, Save, Copy } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -24,12 +23,10 @@ import {
 } from "@/components/ui/dialog";
 import { SortableMediaCard } from "./SortableMediaCard";
 import { MediaPlaceholder } from "./MediaPlaceholder";
-import { PreviewDialog } from "./PreviewDialog";
 import type { ScreenRow, ScreenItem } from "@/types/screen.types";
 import type { LocalItem, PendingItem } from "@/hooks/useMediaDialog";
 import { isPendingItem } from "@/hooks/useMediaDialog";
 import type { DragEndEvent } from "@dnd-kit/core";
-import { localItemsToPreview } from "@/lib/preview-items";
 
 function PendingMediaCard({
   item,
@@ -110,25 +107,17 @@ export function MediaDialog({
   onChangeMode?: (mode: "QUICK" | "TEMPLATE") => void;
 }) {
   const { t } = useTranslation();
-  const [previewOpen, setPreviewOpen] = useState(false);
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
   );
-
-  const previewItems = screen
-    ? localItemsToPreview(items, { screenToken: screen.publicToken })
-    : [];
 
   return (
     <>
       <Dialog open={!!screen} onOpenChange={(o) => !o && onClose()}>
         <DialogContent className="flex h-[85vh] w-[95vw] max-w-[95vw] flex-col gap-0 overflow-hidden rounded-2xl border-border/60 p-0 shadow-xl md:w-[80vw] md:max-w-[80vw]">
           <DialogHeader className="shrink-0 border-b border-border/40 px-6 py-3">
-            <div className="flex items-center justify-between gap-4">
-              <DialogTitle className="text-base font-semibold">
-                {t("screens.dialogTitle")}
-              </DialogTitle>
+            <div className="flex items-center gap-3">
               {onChangeMode && (
                 <div className="flex overflow-hidden rounded-lg border border-border/60 text-xs">
                   <button
@@ -149,6 +138,9 @@ export function MediaDialog({
                   </button>
                 </div>
               )}
+              <DialogTitle className="text-base font-semibold">
+                {t("screens.dialogTitle")}
+              </DialogTitle>
             </div>
           </DialogHeader>
 
@@ -218,16 +210,7 @@ export function MediaDialog({
               </DndContext>
 
               {/* Footer */}
-              <div className="flex shrink-0 items-center justify-between border-t border-border/40 bg-muted/20 px-8 py-3.5">
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="h-10 gap-2 rounded-full px-5 text-sm font-medium"
-                  onClick={() => setPreviewOpen(true)}
-                >
-                  <Eye className="size-4" />
-                  {t("screens.preview")}
-                </Button>
+              <div className="flex shrink-0 items-center justify-end border-t border-border/40 bg-muted/20 px-8 py-3.5">
                 <Button
                   type="button"
                   className="h-10 gap-2 rounded-full px-6 text-sm font-medium"
@@ -242,13 +225,6 @@ export function MediaDialog({
           )}
         </DialogContent>
       </Dialog>
-
-      <PreviewDialog
-        open={previewOpen}
-        onClose={() => setPreviewOpen(false)}
-        items={previewItems}
-        title={editedName}
-      />
     </>
   );
 }
