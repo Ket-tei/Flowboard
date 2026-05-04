@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { X, CheckCircle2, Loader2, AlertCircle } from "lucide-react";
 import { cn } from "@/lib/cn";
+import { checkPassword, isPasswordValid } from "@/lib/password";
 
 const SLUG_RE = /^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$/;
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -34,7 +35,9 @@ export function CheckoutModal({ planId, planName, onClose }: Props) {
 
   const slugValid = SLUG_RE.test(slug);
   const adminEmailValid = EMAIL_RE.test(adminEmail);
-  const canSubmit = slugValid && adminEmailValid && adminPass.length >= 6;
+  const pwChecks = checkPassword(adminPass);
+  const pwValid = isPasswordValid(adminPass);
+  const canSubmit = slugValid && adminEmailValid && pwValid;
   const loading = phase === "validating" || phase === "deploying";
 
   async function handleSubmit() {
@@ -261,13 +264,19 @@ export function CheckoutModal({ planId, planName, onClose }: Props) {
                 onChange={(e) => setAdminPass(e.target.value)}
                 className={cn(
                   "w-full rounded-lg border border-gray-200 px-3 py-2 text-sm outline-none transition-colors focus:border-indigo-400 focus:ring-1 focus:ring-indigo-400",
-                  (adminPass && adminPass.length < 6) || fieldErrors.password
+                  (adminPass && !pwValid) || fieldErrors.password
                     ? "border-red-300 focus:border-red-400 focus:ring-red-400"
                     : ""
                 )}
               />
-              {adminPass && adminPass.length < 6 && (
-                <p className="mt-1 text-xs text-red-500">{t("checkout.passwordTooShort")}</p>
+              {adminPass && !pwValid && (
+                <ul className="mt-2 space-y-0.5">
+                  <PasswordRule ok={pwChecks.minLength} label={t("checkout.pwMinLength")} />
+                  <PasswordRule ok={pwChecks.hasUpper} label={t("checkout.pwHasUpper")} />
+                  <PasswordRule ok={pwChecks.hasLower} label={t("checkout.pwHasLower")} />
+                  <PasswordRule ok={pwChecks.hasDigit} label={t("checkout.pwHasDigit")} />
+                  <PasswordRule ok={pwChecks.hasSpecial} label={t("checkout.pwHasSpecial")} />
+                </ul>
               )}
             </div>
           </div>
@@ -291,6 +300,15 @@ export function CheckoutModal({ planId, planName, onClose }: Props) {
         </div>
       </div>
     </div>
+  );
+}
+
+function PasswordRule({ ok, label }: { ok: boolean; label: string }) {
+  return (
+    <li className={cn("flex items-center gap-1.5 text-xs", ok ? "text-emerald-600" : "text-gray-400")}>
+      <span className={cn("inline-block h-1.5 w-1.5 rounded-full shrink-0", ok ? "bg-emerald-500" : "bg-gray-300")} />
+      {label}
+    </li>
   );
 }
 
