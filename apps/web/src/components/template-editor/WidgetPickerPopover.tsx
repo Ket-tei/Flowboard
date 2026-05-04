@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
 import { Plus } from "lucide-react";
+import { toast } from "sonner";
 import type { TemplateWidget } from "@/types/screen.types";
 
 const WIDGET_DEFS = [
@@ -58,6 +59,9 @@ export function WidgetPickerPopover({ onAdd }: WidgetPickerPopoverProps) {
         endMs: null,
       });
       setOpen(false);
+    } catch (err) {
+      console.error("[WidgetPicker] addWidget failed:", err);
+      toast.error(t("templateEditor.widgetAddError"));
     } finally {
       setAdding(false);
     }

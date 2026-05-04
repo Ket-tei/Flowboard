@@ -289,7 +289,9 @@
     "widgetLabel": "Widget {{n}}",
     "widgetLabelEmpty": "Widget",
     "unsavedIndicator": "unsaved",
-    "dropFiles": "Drop files here"
+    "dropFiles": "Drop files here",
+    "saveError": "Save failed — check your connection",
+    "widgetAddError": "Failed to add widget"
   },
   "show": {
     "missingToken": "Missing token",

@@ -1,4 +1,4 @@
-import { useRef, useState, useCallback } from "react";
+import { useRef, useState, useCallback, useLayoutEffect } from "react";
 import { MonitorPlay } from "lucide-react";
 import type { PlayerItem } from "@/components/show/ScreenPlayer";
 import { ScreenPlayer } from "@/components/show/ScreenPlayer";
@@ -21,6 +21,16 @@ export function LivePreview({
   const containerRef = useRef<HTMLDivElement>(null);
   // null = auto (fills container). A pixel value = user-set width.
   const [previewWidthPx, setPreviewWidthPx] = useState<number | null>(null);
+  const [containerH, setContainerH] = useState(0);
+
+  useLayoutEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver(() => setContainerH(el.offsetHeight));
+    ro.observe(el);
+    setContainerH(el.offsetHeight);
+    return () => ro.disconnect();
+  }, []);
 
   const visibleWidgets = widgets.filter((w) => {
     if (w.startMs !== null && currentMs < w.startMs) return false;
@@ -58,9 +68,10 @@ export function LivePreview({
     window.addEventListener("mouseup", onUp);
   }, [previewWidthPx]);
 
+  const maxH = containerH > 16 ? containerH - 16 : undefined;
   const previewStyle: React.CSSProperties = previewWidthPx
-    ? { width: previewWidthPx, aspectRatio: "16 / 9", maxHeight: "calc(100% - 1rem)" }
-    : { width: "90%", maxWidth: 860, aspectRatio: "16 / 9", maxHeight: "calc(100% - 1rem)" };
+    ? { width: previewWidthPx, aspectRatio: "16 / 9", ...(maxH ? { maxHeight: maxH } : {}) }
+    : { width: "90%", maxWidth: 860, aspectRatio: "16 / 9", ...(maxH ? { maxHeight: maxH } : {}) };
 
   return (
     <div

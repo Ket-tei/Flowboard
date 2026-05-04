@@ -3,6 +3,13 @@ import type { TransitionType } from "@/types/screen.types";
 
 const TRANSITIONS: TransitionType[] = ["NONE", "FADE", "SLIDE_LEFT", "SLIDE_UP"];
 
+// Visual scale for transition blocks: ~0.12px per ms
+// 350ms → 42px, 500ms → 60px, 1000ms → 120px
+const TR_PX_PER_MS = 0.12;
+const MIN_TR_PX = 32;
+const MIN_TR_MS = 50;
+const MAX_TR_MS = 5000;
+
 interface InlineTransitionBlockProps {
   transitionType: TransitionType;
   transitionDurationMs: number;
@@ -17,70 +24,132 @@ export function InlineTransitionBlock({
   onChangeDuration,
 }: InlineTransitionBlockProps) {
   const { t } = useTranslation();
+  const widthPx = Math.max(MIN_TR_PX, Math.round(transitionDurationMs * TR_PX_PER_MS));
   const isNone = transitionType === "NONE";
+
+  function startDrag(side: "left" | "right") {
+    return (e: React.MouseEvent) => {
+      e.stopPropagation();
+      e.preventDefault();
+      const startX = e.clientX;
+      const startW = widthPx;
+
+      const move = (ev: MouseEvent) => {
+        const delta = side === "right" ? ev.clientX - startX : startX - ev.clientX;
+        const newW = Math.max(MIN_TR_PX, startW + delta);
+        const newMs = Math.max(MIN_TR_MS, Math.min(MAX_TR_MS, Math.round(newW / TR_PX_PER_MS)));
+        onChangeDuration(newMs);
+      };
+
+      const up = () => {
+        document.removeEventListener("mousemove", move);
+        document.removeEventListener("mouseup", up);
+      };
+
+      document.addEventListener("mousemove", move);
+      document.addEventListener("mouseup", up);
+    };
+  }
+
+  function cycleType(e: React.MouseEvent) {
+    e.stopPropagation();
+    const idx = TRANSITIONS.indexOf(transitionType);
+    onChangeType(TRANSITIONS[(idx + 1) % TRANSITIONS.length]);
+  }
+
+  const label = isNone ? "—" : t(`transitions.${transitionType}`);
 
   return (
     <div
       style={{
-        width: 84,
+        position: "relative",
+        width: widthPx,
         height: 48,
-        borderRadius: 6,
-        background: "color-mix(in oklch, var(--border), transparent 30%)",
+        borderRadius: 4,
+        background: isNone
+          ? "color-mix(in oklch, var(--border), transparent 20%)"
+          : "color-mix(in oklch, var(--primary), transparent 55%)",
         display: "flex",
-        flexDirection: "column",
         alignItems: "center",
         justifyContent: "center",
         flexShrink: 0,
-        gap: 3,
-        padding: "0 6px",
+        cursor: "pointer",
+        userSelect: "none",
+        overflow: "hidden",
       }}
+      onClick={cycleType}
+      title={`${t("templateEditor.transitionLabel")}: ${t(`transitions.${transitionType}`)} · ${transitionDurationMs}ms — cliquer pour changer`}
     >
-      <select
-        value={transitionType}
-        onChange={(e) => onChangeType(e.target.value as TransitionType)}
+      {/* Left resize handle */}
+      <div
         style={{
-          width: "100%",
-          height: 20,
-          border: "none",
-          background: "transparent",
-          fontSize: 9,
-          fontFamily: "inherit",
-          color: "var(--foreground)",
-          outline: "none",
-          cursor: "pointer",
-          textAlign: "center",
+          position: "absolute",
+          left: 0,
+          top: 0,
+          width: 10,
+          height: "100%",
+          cursor: "ew-resize",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          zIndex: 2,
         }}
-        title={t("templateEditor.transitionLabel")}
+        onMouseDown={startDrag("left")}
+        onClick={(e) => e.stopPropagation()}
       >
-        {TRANSITIONS.map((tr) => (
-          <option key={tr} value={tr}>
-            {t(`transitions.${tr}`)}
-          </option>
-        ))}
-      </select>
-      {!isNone && (
-        <input
-          type="number"
-          value={transitionDurationMs}
-          onChange={(e) => onChangeDuration(Math.min(5000, Math.max(50, Number(e.target.value) || 350)))}
-          step={50}
-          min={50}
-          max={5000}
+        <div
           style={{
-            width: 52,
+            width: 3,
             height: 16,
-            border: "none",
-            background: "rgba(0,0,0,0.08)",
-            borderRadius: 3,
-            fontSize: 9,
-            textAlign: "center",
-            fontFamily: "inherit",
-            color: "var(--muted-foreground)",
-            outline: "none",
+            borderRadius: 2,
+            background: isNone ? "rgba(255,255,255,0.25)" : "rgba(255,255,255,0.45)",
           }}
-          title={t("templateEditor.transitionDuration")}
         />
-      )}
+      </div>
+
+      {/* Transition type label */}
+      <span
+        style={{
+          fontSize: 9,
+          fontWeight: 500,
+          color: isNone ? "var(--muted-foreground)" : "rgba(255,255,255,0.85)",
+          textAlign: "center",
+          pointerEvents: "none",
+          maxWidth: "calc(100% - 24px)",
+          overflow: "hidden",
+          textOverflow: "ellipsis",
+          whiteSpace: "nowrap",
+        }}
+      >
+        {label}
+      </span>
+
+      {/* Right resize handle */}
+      <div
+        style={{
+          position: "absolute",
+          right: 0,
+          top: 0,
+          width: 10,
+          height: "100%",
+          cursor: "ew-resize",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          zIndex: 2,
+        }}
+        onMouseDown={startDrag("right")}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div
+          style={{
+            width: 3,
+            height: 16,
+            borderRadius: 2,
+            background: isNone ? "rgba(255,255,255,0.25)" : "rgba(255,255,255,0.45)",
+          }}
+        />
+      </div>
     </div>
   );
 }

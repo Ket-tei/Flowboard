@@ -289,7 +289,9 @@
     "widgetLabel": "Widget {{n}}",
     "widgetLabelEmpty": "Widget",
     "unsavedIndicator": "non enregistré",
-    "dropFiles": "Déposer des fichiers ici"
+    "dropFiles": "Déposer des fichiers ici",
+    "saveError": "Échec de la sauvegarde — vérifiez votre connexion",
+    "widgetAddError": "Impossible d'ajouter le widget"
   },
   "show": {
     "missingToken": "Jeton manquant",

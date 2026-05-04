@@ -130,7 +130,7 @@ export function useTemplateEditor(onTreeChanged: () => Promise<void>) {
   }
 
   async function addWidget(widget: Omit<TemplateWidget, "id">) {
-    if (!dialogScreen) return;
+    if (!dialogScreen) throw new Error("Template not loaded");
     const created = await apiFetch<TemplateWidget>(`/api/templates/${dialogScreen.id}/widgets`, {
       method: "POST",
       body: JSON.stringify({
@@ -256,6 +256,9 @@ export function useTemplateEditor(onTreeChanged: () => Promise<void>) {
       setOriginalName(r.screen.name);
       setWidgets(r.widgets ?? []);
       setOriginalWidgets(r.widgets ?? []);
+    } catch (err) {
+      console.error("[saveChanges]", err);
+      toast.error(t("templateEditor.saveError"));
     } finally {
       setSaving(false);
     }
