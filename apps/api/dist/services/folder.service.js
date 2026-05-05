@@ -3,6 +3,7 @@ import { db, pool } from "../db/index.js";
 import { folders, screenItems, screens } from "../db/schema.js";
 import { getVisibleFolderIds } from "./access.service.js";
 import { deleteFile } from "./upload.service.js";
+import { NotFoundError } from "../lib/errors.js";
 function buildTree(rows, parentId) {
     return rows
         .filter((r) => (r.parentId ?? null) === parentId)
@@ -99,10 +100,4 @@ export async function updateFolder(folderId, input) {
     if (input.sortOrder !== undefined)
         updates.sortOrder = input.sortOrder;
     await db.update(folders).set(updates).where(eq(folders.id, folderId));
-}
-export class NotFoundError extends Error {
-    constructor(message) {
-        super(message);
-        this.name = "NotFoundError";
-    }
 }

@@ -1,513 +1,147 @@
-import { createWriteStream } from "node:fs";
-import { promises as fs } from "node:fs";
-import path from "node:path";
-import { pipeline } from "node:stream/promises";
 import { createReadStream } from "node:fs";
 import { stat } from "node:fs/promises";
-import { and, desc, eq, sql } from "drizzle-orm";
-import { v4 as uuidv4 } from "uuid";
-import { db, pool } from "../db/index.js";
-import { templateFolders, templates, templateItems, templateWidgets, userTemplateFolderAccess, userTemplateAccess, } from "../db/schema.js";
+import { and, eq } from "drizzle-orm";
+import { db } from "../db/index.js";
+import { templateItems } from "../db/schema.js";
 import { authPreHandler, adminPreHandler } from "../plugins/require-auth.js";
-import { deleteFile, ensureUploadDir, uploadDir, resolveFilePath } from "../services/upload.service.js";
-import { mimeToMediaType } from "../lib/media-type.js";
-import { z } from "zod";
 import { validate } from "../schemas/validate.js";
-const createFolderSchema = z.object({
-    name: z.string().trim().min(1).max(255),
-    parentId: z.number().int().positive().nullable().optional(),
-    sortOrder: z.number().int().default(0),
-});
-const updateFolderSchema = z.object({
-    name: z.string().trim().min(1).max(255).optional(),
-    parentId: z.number().int().positive().nullable().optional(),
-    sortOrder: z.number().int().optional(),
-}).refine((d) => Object.values(d).some((v) => v !== undefined), {
-    message: "at least one field required",
-});
-const createTemplateSchema = z.object({
-    name: z.string().trim().min(1).max(255),
-    sortOrder: z.number().int().default(0),
-});
-const updateTemplateSchema = z.object({
-    name: z.string().trim().min(1).max(255).optional(),
-    sortOrder: z.number().int().optional(),
-    folderId: z.number().int().positive().optional(),
-}).refine((d) => Object.values(d).some((v) => v !== undefined), {
-    message: "at least one field required",
-});
-const reorderItemsSchema = z.object({
-    orderedIds: z.array(z.number().int().positive()).min(1),
-});
-const TRANSITION_VALUES = ["NONE", "FADE", "SLIDE_LEFT", "SLIDE_UP"];
-const WIDGET_POSITIONS = ["TOP_LEFT", "TOP_RIGHT", "BOTTOM_LEFT", "BOTTOM_RIGHT"];
-const WIDGET_TYPES = ["WEATHER_CURRENT"];
-const updateItemSchema = z.object({
-    durationMs: z.number().int().min(0).optional(),
-    transitionType: z.enum(TRANSITION_VALUES).optional(),
-    transitionDurationMs: z.number().int().min(50).max(5000).optional(),
-}).refine((d) => Object.values(d).some((v) => v !== undefined), {
-    message: "at least one field required",
-});
-const geometrySchema = {
-    x: z.number().min(0).max(1).optional(),
-    y: z.number().min(0).max(1).optional(),
-    w: z.number().min(0).max(1).optional(),
-    h: z.number().min(0).max(1).optional(),
-    startMs: z.number().int().nullable().optional(),
-    endMs: z.number().int().nullable().optional(),
-};
-const createWidgetSchema = z.object({
-    type: z.enum(WIDGET_TYPES),
-    position: z.enum(WIDGET_POSITIONS).default("TOP_RIGHT"),
-    config: z.record(z.string(), z.unknown()).default({}),
-    ...geometrySchema,
-});
-const updateWidgetSchema = z.object({
-    position: z.enum(WIDGET_POSITIONS).optional(),
-    config: z.record(z.string(), z.unknown()).optional(),
-    ...geometrySchema,
-}).refine((d) => Object.values(d).some((v) => v !== undefined), {
-    message: "at least one field required",
-});
-function buildTree(folderRows, templatesByFolder, parentId) {
-    return folderRows
-        .filter((r) => (r.parentId ?? null) === parentId)
-        .sort((a, b) => a.sortOrder - b.sortOrder || a.id - b.id)
-        .map((r) => ({
-        id: r.id,
-        parentId: r.parentId,
-        name: r.name,
-        sortOrder: r.sortOrder,
-        screens: (templatesByFolder.get(r.id) ?? []).map((t) => ({
-            id: t.id,
-            name: t.name,
-            publicToken: `tpl-${t.id}`,
-            displayMode: "QUICK",
-        })),
-        children: buildTree(folderRows, templatesByFolder, r.id),
-    }));
-}
-async function canAccessTemplate(userId, role, templateId) {
-    if (role === "ADMIN")
-        return true;
-    const tpl = await db.select({ folderId: templates.folderId }).from(templates).where(eq(templates.id, templateId)).limit(1);
-    if (!tpl[0])
-        return false;
-    const folderAccess = await db.select().from(userTemplateFolderAccess)
-        .where(and(eq(userTemplateFolderAccess.userId, userId), eq(userTemplateFolderAccess.templateFolderId, tpl[0].folderId)))
-        .limit(1);
-    if (folderAccess.length > 0)
-        return true;
-    const direct = await db.select().from(userTemplateAccess)
-        .where(and(eq(userTemplateAccess.userId, userId), eq(userTemplateAccess.templateId, templateId)))
-        .limit(1);
-    return direct.length > 0;
-}
-async function bumpTemplateRevision(templateId) {
-    await db.update(templates).set({ revision: sql `${templates.revision} + 1` }).where(eq(templates.id, templateId));
-}
-function safeParseJson(raw) {
-    try {
-        const v = JSON.parse(raw);
-        return v && typeof v === "object" && !Array.isArray(v) ? v : {};
-    }
-    catch {
-        return {};
-    }
-}
+import { resolveFilePath } from "../services/upload.service.js";
+import { canAccessTemplate } from "../services/access.service.js";
+import { getTemplateTree, getAdminTemplateTree, createTemplateFolder, updateTemplateFolder, deleteTemplateFolder, createTemplate, getTemplateDetail, updateTemplate, deleteTemplate, } from "../services/template.service.js";
+import { uploadTemplateItem, reorderTemplateItems, updateTemplateItem, deleteTemplateItem, } from "../services/template-item.service.js";
+import { createTemplateWidget, updateTemplateWidget, deleteTemplateWidget, } from "../services/template-widget.service.js";
+import { createTemplateFolderSchema, updateTemplateFolderSchema, createTemplateSchema, updateTemplateSchema, reorderTemplateItemsSchema, updateTemplateItemSchema, createWidgetSchema, updateWidgetSchema, TRANSITION_VALUES, } from "../schemas/template.schema.js";
+import { parseIdParam } from "../lib/params.js";
+import { AccessError, BadRequestError } from "../lib/errors.js";
 export async function registerTemplateRoutes(app) {
-    // --- Template folders tree ---
+    // --- Template folder tree ---
     app.get("/template-folders/tree", { preHandler: authPreHandler }, async (request) => {
         const u = request.authUser;
-        const allFolders = await db.select().from(templateFolders);
-        const allTemplates = await db.select().from(templates);
-        const map = new Map();
-        for (const t of allTemplates) {
-            const list = map.get(t.folderId) ?? [];
-            list.push(t);
-            map.set(t.folderId, list);
-        }
-        for (const list of map.values()) {
-            list.sort((a, b) => a.sortOrder - b.sortOrder || a.id - b.id);
-        }
-        if (u.role !== "ADMIN") {
-            // Filter to only accessible folders/templates
-            const [folderRows, templateRows] = await Promise.all([
-                db.select({ templateFolderId: userTemplateFolderAccess.templateFolderId }).from(userTemplateFolderAccess).where(eq(userTemplateFolderAccess.userId, u.sub)),
-                db.select({ templateId: userTemplateAccess.templateId }).from(userTemplateAccess).where(eq(userTemplateAccess.userId, u.sub)),
-            ]);
-            const accessFolderIds = new Set(folderRows.map((r) => r.templateFolderId));
-            const accessTemplateIds = new Set(templateRows.map((r) => r.templateId));
-            const visibleFolderIds = new Set();
-            const addWithParents = (id) => {
-                if (visibleFolderIds.has(id))
-                    return;
-                visibleFolderIds.add(id);
-                const f = allFolders.find((f) => f.id === id);
-                if (f?.parentId)
-                    addWithParents(f.parentId);
-            };
-            for (const fid of accessFolderIds)
-                addWithParents(fid);
-            for (const tid of accessTemplateIds) {
-                const tpl = allTemplates.find((t) => t.id === tid);
-                if (tpl)
-                    addWithParents(tpl.folderId);
-            }
-            const filteredFolders = allFolders.filter((f) => visibleFolderIds.has(f.id));
-            const filteredMap = new Map();
-            for (const t of allTemplates) {
-                if (!accessFolderIds.has(t.folderId) && !accessTemplateIds.has(t.id))
-                    continue;
-                const list = filteredMap.get(t.folderId) ?? [];
-                list.push(t);
-                filteredMap.set(t.folderId, list);
-            }
-            return { tree: buildTree(filteredFolders, filteredMap, null) };
-        }
-        return { tree: buildTree(allFolders, map, null) };
+        return getTemplateTree(u.sub, u.role);
     });
-    // --- Admin tree for access management ---
     app.get("/admin/template-folder-tree", { preHandler: adminPreHandler }, async () => {
-        const allFolders = await db.select().from(templateFolders);
-        const allTemplates = await db.select().from(templates);
-        const map = new Map();
-        for (const t of allTemplates) {
-            const list = map.get(t.folderId) ?? [];
-            list.push(t);
-            map.set(t.folderId, list);
-        }
-        for (const list of map.values()) {
-            list.sort((a, b) => a.sortOrder - b.sortOrder || a.id - b.id);
-        }
-        return { tree: buildTree(allFolders, map, null) };
+        return getAdminTemplateTree();
     });
     // --- Template folder CRUD ---
     app.post("/template-folders", { preHandler: adminPreHandler }, async (request) => {
-        const input = validate(createFolderSchema, request.body);
-        await db.insert(templateFolders).values({
-            name: input.name,
-            parentId: input.parentId ?? null,
-            sortOrder: input.sortOrder,
-        });
-        const [lid] = await pool.query("SELECT LAST_INSERT_ID() AS id");
-        const id = Number(lid[0]?.id);
-        return { id };
+        const input = validate(createTemplateFolderSchema, request.body);
+        return createTemplateFolder(input);
     });
-    app.patch("/template-folders/:id", { preHandler: adminPreHandler }, async (request, reply) => {
-        const id = Number(request.params.id);
-        if (!Number.isFinite(id))
-            return reply.status(400).send({ error: "invalid id" });
-        const input = validate(updateFolderSchema, request.body);
-        const updates = {};
-        if (input.name != null)
-            updates.name = input.name;
-        if ("parentId" in input)
-            updates.parentId = input.parentId ?? null;
-        if (input.sortOrder !== undefined)
-            updates.sortOrder = input.sortOrder;
-        await db.update(templateFolders).set(updates).where(eq(templateFolders.id, id));
+    app.patch("/template-folders/:id", { preHandler: adminPreHandler }, async (request) => {
+        const id = parseIdParam(request);
+        const input = validate(updateTemplateFolderSchema, request.body);
+        await updateTemplateFolder(id, input);
         return { ok: true };
     });
-    app.delete("/template-folders/:id", { preHandler: adminPreHandler }, async (request, reply) => {
-        const id = Number(request.params.id);
-        if (!Number.isFinite(id))
-            return reply.status(400).send({ error: "invalid id" });
-        // Delete all templates + their items in this folder
-        const tpls = await db.select({ id: templates.id }).from(templates).where(eq(templates.folderId, id));
-        for (const tpl of tpls) {
-            const items = await db.select().from(templateItems).where(eq(templateItems.templateId, tpl.id));
-            for (const it of items)
-                await deleteFile(it.storageKey);
-            await db.delete(templateItems).where(eq(templateItems.templateId, tpl.id));
-        }
-        await db.delete(templates).where(eq(templates.folderId, id));
-        await db.delete(templateFolders).where(eq(templateFolders.id, id));
+    app.delete("/template-folders/:id", { preHandler: adminPreHandler }, async (request) => {
+        const id = parseIdParam(request);
+        await deleteTemplateFolder(id);
         return { ok: true };
     });
     // --- Template CRUD ---
-    app.post("/template-folders/:folderId/templates", { preHandler: adminPreHandler }, async (request, reply) => {
-        const folderId = Number(request.params.folderId);
-        if (!Number.isFinite(folderId))
-            return reply.status(400).send({ error: "invalid folder" });
-        const f = await db.select().from(templateFolders).where(eq(templateFolders.id, folderId)).limit(1);
-        if (!f[0])
-            return reply.status(404).send({ error: "folder not found" });
+    app.post("/template-folders/:folderId/templates", { preHandler: adminPreHandler }, async (request) => {
+        const folderId = parseIdParam(request, "folderId");
         const input = validate(createTemplateSchema, request.body);
-        await db.insert(templates).values({ folderId, name: input.name, sortOrder: input.sortOrder, revision: 0 });
-        const [lid] = await pool.query("SELECT LAST_INSERT_ID() AS id");
-        const id = Number(lid[0]?.id);
-        return { id };
+        return createTemplate(folderId, input);
     });
-    app.get("/templates/:id", { preHandler: authPreHandler }, async (request, reply) => {
+    app.get("/templates/:id", { preHandler: authPreHandler }, async (request) => {
         const u = request.authUser;
-        const id = Number(request.params.id);
-        if (!Number.isFinite(id))
-            return reply.status(400).send({ error: "invalid id" });
-        if (!(await canAccessTemplate(u.sub, u.role, id))) {
-            return reply.status(403).send({ error: "Forbidden" });
-        }
-        const tpl = await db.select().from(templates).where(eq(templates.id, id)).limit(1);
-        if (!tpl[0])
-            return reply.status(404).send({ error: "not found" });
-        const items = await db.select().from(templateItems)
-            .where(eq(templateItems.templateId, id))
-            .orderBy(templateItems.sortOrder, templateItems.id);
-        const widgets = await db.select().from(templateWidgets).where(eq(templateWidgets.templateId, id));
-        return {
-            screen: {
-                id: tpl[0].id,
-                folderId: tpl[0].folderId,
-                name: tpl[0].name,
-                publicToken: `tpl-${tpl[0].id}`,
-                revision: tpl[0].revision,
-                sortOrder: tpl[0].sortOrder,
-                displayMode: "QUICK",
-                slideshowPath: "",
-            },
-            items: items.map((it) => ({
-                id: it.id,
-                type: it.type,
-                durationMs: it.durationMs,
-                sortOrder: it.sortOrder,
-                mimeType: it.mimeType,
-                transitionType: it.transitionType,
-                transitionDurationMs: it.transitionDurationMs,
-            })),
-            widgets: widgets.map((widget) => ({
-                id: widget.id,
-                type: widget.type,
-                config: safeParseJson(widget.config),
-                x: Number(widget.x),
-                y: Number(widget.y),
-                w: Number(widget.w),
-                h: Number(widget.h),
-                startMs: widget.startMs,
-                endMs: widget.endMs,
-            })),
-        };
+        const id = parseIdParam(request);
+        if (!(await canAccessTemplate(u.sub, u.role, id)))
+            throw new AccessError();
+        return getTemplateDetail(id);
     });
-    app.patch("/templates/:id", { preHandler: adminPreHandler }, async (request, reply) => {
-        const id = Number(request.params.id);
-        if (!Number.isFinite(id))
-            return reply.status(400).send({ error: "invalid id" });
+    app.patch("/templates/:id", { preHandler: adminPreHandler }, async (request) => {
+        const id = parseIdParam(request);
         const input = validate(updateTemplateSchema, request.body);
-        const updates = {};
-        if (input.name != null)
-            updates.name = input.name;
-        if (input.sortOrder !== undefined)
-            updates.sortOrder = input.sortOrder;
-        if (input.folderId !== undefined)
-            updates.folderId = input.folderId;
-        await db.update(templates).set(updates).where(eq(templates.id, id));
+        await updateTemplate(id, input);
         return { ok: true };
     });
-    app.delete("/templates/:id", { preHandler: adminPreHandler }, async (request, reply) => {
-        const id = Number(request.params.id);
-        if (!Number.isFinite(id))
-            return reply.status(400).send({ error: "invalid id" });
-        const items = await db.select().from(templateItems).where(eq(templateItems.templateId, id));
-        for (const it of items)
-            await deleteFile(it.storageKey);
-        await db.delete(templateItems).where(eq(templateItems.templateId, id));
-        await db.delete(templates).where(eq(templates.id, id));
+    app.delete("/templates/:id", { preHandler: adminPreHandler }, async (request) => {
+        const id = parseIdParam(request);
+        await deleteTemplate(id);
         return { ok: true };
     });
     // --- Template items ---
-    app.post("/templates/:id/items", { preHandler: authPreHandler }, async (request, reply) => {
+    app.post("/templates/:id/items", { preHandler: authPreHandler }, async (request) => {
         const u = request.authUser;
-        const templateId = Number(request.params.id);
-        if (!Number.isFinite(templateId))
-            return reply.status(400).send({ error: "invalid id" });
-        if (!(await canAccessTemplate(u.sub, u.role, templateId))) {
-            return reply.status(403).send({ error: "Forbidden" });
-        }
+        const templateId = parseIdParam(request);
+        if (!(await canAccessTemplate(u.sub, u.role, templateId)))
+            throw new AccessError();
         const mp = await request.file();
         if (!mp)
-            return reply.status(400).send({ error: "file required" });
+            throw new BadRequestError("file required");
         const q = request.query;
         const durationMs = Number(q.durationMs ?? 5000) || 5000;
         const transitionType = TRANSITION_VALUES.includes(q.transitionType ?? "")
             ? q.transitionType
             : "NONE";
         const transitionDurationMs = Math.min(5000, Math.max(50, Number(q.transitionDurationMs ?? 350) || 350));
-        const mime = mp.mimetype ?? "application/octet-stream";
-        const kind = mimeToMediaType(mime);
-        if (!kind)
-            return reply.status(400).send({ error: "unsupported media type" });
-        await ensureUploadDir();
-        const ext = path.extname(mp.filename || "") || (kind === "VIDEO" ? ".mp4" : ".bin");
-        const storageKey = `tpl_${templateId}/${uuidv4()}${ext}`;
-        const full = path.join(uploadDir(), storageKey);
-        await fs.mkdir(path.dirname(full), { recursive: true });
-        await pipeline(mp.file, createWriteStream(full));
-        const maxOrder = await db
-            .select({ sortOrder: templateItems.sortOrder })
-            .from(templateItems)
-            .where(eq(templateItems.templateId, templateId))
-            .orderBy(desc(templateItems.sortOrder))
-            .limit(1);
-        const nextOrder = (maxOrder[0]?.sortOrder ?? -1) + 1;
-        await db.insert(templateItems).values({ templateId, type: kind, storageKey, mimeType: mime, durationMs, sortOrder: nextOrder, transitionType, transitionDurationMs });
-        const [lid] = await pool.query("SELECT LAST_INSERT_ID() AS id");
-        const itemId = Number(lid[0]?.id);
-        await bumpTemplateRevision(templateId);
-        return { id: itemId, type: kind, durationMs, sortOrder: nextOrder, mimeType: mime, transitionType, transitionDurationMs };
+        return uploadTemplateItem(templateId, { stream: mp.file, mimetype: mp.mimetype, filename: mp.filename }, { durationMs, transitionType, transitionDurationMs });
     });
-    app.patch("/templates/:id/items/order", { preHandler: authPreHandler }, async (request, reply) => {
+    app.patch("/templates/:id/items/order", { preHandler: authPreHandler }, async (request) => {
         const u = request.authUser;
-        const templateId = Number(request.params.id);
-        if (!Number.isFinite(templateId))
-            return reply.status(400).send({ error: "invalid id" });
-        if (!(await canAccessTemplate(u.sub, u.role, templateId))) {
-            return reply.status(403).send({ error: "Forbidden" });
-        }
-        const input = validate(reorderItemsSchema, request.body);
-        const existing = await db.select({ id: templateItems.id }).from(templateItems).where(eq(templateItems.templateId, templateId));
-        const setIds = new Set(existing.map((e) => e.id));
-        for (let i = 0; i < input.orderedIds.length; i++) {
-            if (!setIds.has(input.orderedIds[i]))
-                return reply.status(400).send({ error: "invalid item id" });
-            await db.update(templateItems).set({ sortOrder: i }).where(eq(templateItems.id, input.orderedIds[i]));
-        }
-        await bumpTemplateRevision(templateId);
+        const templateId = parseIdParam(request);
+        if (!(await canAccessTemplate(u.sub, u.role, templateId)))
+            throw new AccessError();
+        const input = validate(reorderTemplateItemsSchema, request.body);
+        await reorderTemplateItems(templateId, input);
         return { ok: true };
     });
-    app.patch("/templates/:id/items/:itemId", { preHandler: authPreHandler }, async (request, reply) => {
+    app.patch("/templates/:id/items/:itemId", { preHandler: authPreHandler }, async (request) => {
         const u = request.authUser;
-        const templateId = Number(request.params.id);
-        const itemId = Number(request.params.itemId);
-        if (!Number.isFinite(templateId) || !Number.isFinite(itemId)) {
-            return reply.status(400).send({ error: "invalid id" });
-        }
-        if (!(await canAccessTemplate(u.sub, u.role, templateId))) {
-            return reply.status(403).send({ error: "Forbidden" });
-        }
-        const input = validate(updateItemSchema, request.body);
-        const row = await db.select().from(templateItems).where(eq(templateItems.id, itemId)).limit(1);
-        if (!row[0] || row[0].templateId !== templateId)
-            return reply.status(404).send({ error: "item not found" });
-        const updates = {};
-        if (input.durationMs !== undefined)
-            updates.durationMs = input.durationMs;
-        if (input.transitionType !== undefined)
-            updates.transitionType = input.transitionType;
-        if (input.transitionDurationMs !== undefined)
-            updates.transitionDurationMs = input.transitionDurationMs;
-        await db.update(templateItems).set(updates).where(eq(templateItems.id, itemId));
-        await bumpTemplateRevision(templateId);
+        const templateId = parseIdParam(request);
+        const itemId = parseIdParam(request, "itemId");
+        if (!(await canAccessTemplate(u.sub, u.role, templateId)))
+            throw new AccessError();
+        const input = validate(updateTemplateItemSchema, request.body);
+        await updateTemplateItem(templateId, itemId, input);
         return { ok: true };
     });
-    app.delete("/templates/:id/items/:itemId", { preHandler: authPreHandler }, async (request, reply) => {
+    app.delete("/templates/:id/items/:itemId", { preHandler: authPreHandler }, async (request) => {
         const u = request.authUser;
-        const templateId = Number(request.params.id);
-        const itemId = Number(request.params.itemId);
-        if (!Number.isFinite(templateId) || !Number.isFinite(itemId)) {
-            return reply.status(400).send({ error: "invalid id" });
-        }
-        if (!(await canAccessTemplate(u.sub, u.role, templateId))) {
-            return reply.status(403).send({ error: "Forbidden" });
-        }
-        const row = await db.select().from(templateItems).where(eq(templateItems.id, itemId)).limit(1);
-        if (!row[0] || row[0].templateId !== templateId)
-            return reply.status(404).send({ error: "item not found" });
-        await deleteFile(row[0].storageKey);
-        await db.delete(templateItems).where(eq(templateItems.id, itemId));
-        await bumpTemplateRevision(templateId);
+        const templateId = parseIdParam(request);
+        const itemId = parseIdParam(request, "itemId");
+        if (!(await canAccessTemplate(u.sub, u.role, templateId)))
+            throw new AccessError();
+        await deleteTemplateItem(templateId, itemId);
         return { ok: true };
     });
     // --- Template widgets ---
-    app.post("/templates/:id/widgets", { preHandler: authPreHandler }, async (request, reply) => {
+    app.post("/templates/:id/widgets", { preHandler: authPreHandler }, async (request) => {
         const u = request.authUser;
-        const templateId = Number(request.params.id);
-        if (!Number.isFinite(templateId))
-            return reply.status(400).send({ error: "invalid id" });
-        if (!(await canAccessTemplate(u.sub, u.role, templateId))) {
-            return reply.status(403).send({ error: "Forbidden" });
-        }
+        const templateId = parseIdParam(request);
+        if (!(await canAccessTemplate(u.sub, u.role, templateId)))
+            throw new AccessError();
         const input = validate(createWidgetSchema, request.body);
-        const wx = input.x ?? 0.85;
-        const wy = input.y ?? 0.04;
-        const ww = input.w ?? 0.13;
-        const wh = input.h ?? 0.10;
-        await db.insert(templateWidgets).values({
-            templateId,
-            type: input.type,
-            position: input.position,
-            config: JSON.stringify(input.config),
-            x: String(wx),
-            y: String(wy),
-            w: String(ww),
-            h: String(wh),
-            startMs: input.startMs ?? null,
-            endMs: input.endMs ?? null,
-        });
-        const [lid] = await pool.query("SELECT LAST_INSERT_ID() AS id");
-        const id = Number(lid[0]?.id);
-        await bumpTemplateRevision(templateId);
-        return { id, type: input.type, config: input.config, x: wx, y: wy, w: ww, h: wh, startMs: input.startMs ?? null, endMs: input.endMs ?? null };
+        return createTemplateWidget(templateId, input);
     });
-    app.patch("/templates/:id/widgets/:widgetId", { preHandler: authPreHandler }, async (request, reply) => {
+    app.patch("/templates/:id/widgets/:widgetId", { preHandler: authPreHandler }, async (request) => {
         const u = request.authUser;
-        const templateId = Number(request.params.id);
-        const widgetId = Number(request.params.widgetId);
-        if (!Number.isFinite(templateId) || !Number.isFinite(widgetId)) {
-            return reply.status(400).send({ error: "invalid id" });
-        }
-        if (!(await canAccessTemplate(u.sub, u.role, templateId))) {
-            return reply.status(403).send({ error: "Forbidden" });
-        }
+        const templateId = parseIdParam(request);
+        const widgetId = parseIdParam(request, "widgetId");
+        if (!(await canAccessTemplate(u.sub, u.role, templateId)))
+            throw new AccessError();
         const input = validate(updateWidgetSchema, request.body);
-        const row = await db.select().from(templateWidgets).where(eq(templateWidgets.id, widgetId)).limit(1);
-        if (!row[0] || row[0].templateId !== templateId)
-            return reply.status(404).send({ error: "widget not found" });
-        const updates = {};
-        if (input.position !== undefined)
-            updates.position = input.position;
-        if (input.config !== undefined)
-            updates.config = JSON.stringify(input.config);
-        if (input.x !== undefined)
-            updates.x = String(input.x);
-        if (input.y !== undefined)
-            updates.y = String(input.y);
-        if (input.w !== undefined)
-            updates.w = String(input.w);
-        if (input.h !== undefined)
-            updates.h = String(input.h);
-        if ("startMs" in input)
-            updates.startMs = input.startMs ?? null;
-        if ("endMs" in input)
-            updates.endMs = input.endMs ?? null;
-        await db.update(templateWidgets).set(updates).where(eq(templateWidgets.id, widgetId));
-        await bumpTemplateRevision(templateId);
+        await updateTemplateWidget(templateId, widgetId, input);
         return { ok: true };
     });
-    app.delete("/templates/:id/widgets/:widgetId", { preHandler: authPreHandler }, async (request, reply) => {
+    app.delete("/templates/:id/widgets/:widgetId", { preHandler: authPreHandler }, async (request) => {
         const u = request.authUser;
-        const templateId = Number(request.params.id);
-        const widgetId = Number(request.params.widgetId);
-        if (!Number.isFinite(templateId) || !Number.isFinite(widgetId)) {
-            return reply.status(400).send({ error: "invalid id" });
-        }
-        if (!(await canAccessTemplate(u.sub, u.role, templateId))) {
-            return reply.status(403).send({ error: "Forbidden" });
-        }
-        const row = await db.select().from(templateWidgets).where(eq(templateWidgets.id, widgetId)).limit(1);
-        if (!row[0] || row[0].templateId !== templateId)
-            return reply.status(404).send({ error: "widget not found" });
-        await db.delete(templateWidgets).where(eq(templateWidgets.id, widgetId));
-        await bumpTemplateRevision(templateId);
+        const templateId = parseIdParam(request);
+        const widgetId = parseIdParam(request, "widgetId");
+        if (!(await canAccessTemplate(u.sub, u.role, templateId)))
+            throw new AccessError();
+        await deleteTemplateWidget(templateId, widgetId);
         return { ok: true };
     });
     // --- Public template media endpoint ---
     app.get("/public/templates/:templateId/media/:itemId", async (request, reply) => {
-        const templateId = Number(request.params.templateId);
-        const itemId = Number(request.params.itemId);
-        if (!Number.isFinite(templateId) || !Number.isFinite(itemId)) {
-            return reply.status(400).send({ error: "invalid" });
-        }
-        const item = await db.select().from(templateItems)
+        const templateId = parseIdParam(request, "templateId");
+        const itemId = parseIdParam(request, "itemId");
+        const item = await db
+            .select()
+            .from(templateItems)
             .where(and(eq(templateItems.id, itemId), eq(templateItems.templateId, templateId)))
             .limit(1);
         if (!item[0])

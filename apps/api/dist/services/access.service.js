@@ -1,6 +1,6 @@
 import { and, eq, sql } from "drizzle-orm";
 import { db } from "../db/index.js";
-import { folders, screens, userFolderAccess, userScreenAccess, } from "../db/schema.js";
+import { folders, screens, userFolderAccess, userScreenAccess, templates, userTemplateFolderAccess, userTemplateAccess, } from "../db/schema.js";
 /**
  * Load all folders once, then expand granted folder IDs to include all
  * descendants in-memory (avoids N+1 queries).
@@ -90,4 +90,28 @@ export async function bumpScreenRevision(screenId) {
         .update(screens)
         .set({ revision: sql `${screens.revision} + 1` })
         .where(eq(screens.id, screenId));
+}
+export async function canAccessTemplate(userId, role, templateId) {
+    if (role === "ADMIN")
+        return true;
+    const tpl = await db
+        .select({ folderId: templates.folderId })
+        .from(templates)
+        .where(eq(templates.id, templateId))
+        .limit(1);
+    if (!tpl[0])
+        return false;
+    const folderAccess = await db
+        .select()
+        .from(userTemplateFolderAccess)
+        .where(and(eq(userTemplateFolderAccess.userId, userId), eq(userTemplateFolderAccess.templateFolderId, tpl[0].folderId)))
+        .limit(1);
+    if (folderAccess.length > 0)
+        return true;
+    const direct = await db
+        .select()
+        .from(userTemplateAccess)
+        .where(and(eq(userTemplateAccess.userId, userId), eq(userTemplateAccess.templateId, templateId)))
+        .limit(1);
+    return direct.length > 0;
 }

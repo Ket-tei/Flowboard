@@ -1,5 +1,7 @@
+import { createWriteStream } from "node:fs";
 import { promises as fs } from "node:fs";
 import path from "node:path";
+import { pipeline } from "node:stream/promises";
 let _dir = null;
 export function uploadDir() {
     if (!_dir) {
@@ -21,4 +23,10 @@ export async function deleteFile(storageKey) {
 }
 export function resolveFilePath(storageKey) {
     return path.join(uploadDir(), storageKey);
+}
+export async function saveFile(stream, storageKey) {
+    await ensureUploadDir();
+    const full = path.join(uploadDir(), storageKey);
+    await fs.mkdir(path.dirname(full), { recursive: true });
+    await pipeline(stream, createWriteStream(full));
 }

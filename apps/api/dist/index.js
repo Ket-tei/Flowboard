@@ -18,7 +18,7 @@ import { registerInstanceRoutes } from "./routes/instance.js";
 import { registerUserRoutes } from "./routes/users.js";
 import { ValidationError } from "./schemas/validate.js";
 import { AuthError } from "./services/auth.service.js";
-import { NotFoundError } from "./services/folder.service.js";
+import { AccessError, BadRequestError, NotFoundError } from "./lib/errors.js";
 import { ScreenError } from "./services/screen.service.js";
 import { UserError } from "./services/user.service.js";
 import { QuotaError } from "./services/quota.service.js";
@@ -61,8 +61,14 @@ async function buildApp() {
         if (error instanceof ValidationError) {
             return reply.status(400).send({ error: error.message });
         }
+        if (error instanceof BadRequestError) {
+            return reply.status(400).send({ error: error.message });
+        }
         if (error instanceof AuthError) {
             return reply.status(401).send({ error: error.message });
+        }
+        if (error instanceof AccessError) {
+            return reply.status(403).send({ error: error.message });
         }
         if (error instanceof NotFoundError) {
             return reply.status(404).send({ error: error.message });

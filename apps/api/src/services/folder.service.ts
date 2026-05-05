@@ -4,6 +4,7 @@ import { folders, screenItems, screens } from "../db/schema.js";
 import { getVisibleFolderIds } from "./access.service.js";
 import { deleteFile } from "./upload.service.js";
 import type { CreateFolderInput } from "../schemas/folder.schema.js";
+import { NotFoundError } from "../lib/errors.js";
 
 type FolderRow = typeof folders.$inferSelect;
 
@@ -107,9 +108,3 @@ export async function updateFolder(
   await db.update(folders).set(updates).where(eq(folders.id, folderId));
 }
 
-export class NotFoundError extends Error {
-  constructor(message: string) {
-    super(message);
-    this.name = "NotFoundError";
-  }
-}

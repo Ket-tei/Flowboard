@@ -12,6 +12,8 @@ import {
 import { authPreHandler, adminPreHandler } from "../plugins/require-auth.js";
 import { validate } from "../schemas/validate.js";
 import { createFolderSchema, updateFolderSchema } from "../schemas/folder.schema.js";
+import { parseIdParam } from "../lib/params.js";
+import { AccessError } from "../lib/errors.js";
 
 export async function registerFolderRoutes(app: FastifyInstance) {
   app.get("/folders", { preHandler: authPreHandler }, async (request) => {
@@ -24,28 +26,23 @@ export async function registerFolderRoutes(app: FastifyInstance) {
     return createFolder(input);
   });
 
-  app.delete("/folders/:id", { preHandler: adminPreHandler }, async (request, reply) => {
-    const id = Number((request.params as { id: string }).id);
-    if (!Number.isFinite(id)) return reply.status(400).send({ error: "invalid id" });
+  app.delete("/folders/:id", { preHandler: adminPreHandler }, async (request) => {
+    const id = parseIdParam(request);
     await deleteFolder(id);
     return { ok: true };
   });
 
-  app.patch("/folders/:id", { preHandler: adminPreHandler }, async (request, reply) => {
-    const id = Number((request.params as { id: string }).id);
-    if (!Number.isFinite(id)) return reply.status(400).send({ error: "invalid id" });
+  app.patch("/folders/:id", { preHandler: adminPreHandler }, async (request) => {
+    const id = parseIdParam(request);
     const input = validate(updateFolderSchema, request.body);
     await updateFolder(id, input);
     return { ok: true };
   });
 
-  app.get("/folders/:folderId/screens", { preHandler: authPreHandler }, async (request, reply) => {
+  app.get("/folders/:folderId/screens", { preHandler: authPreHandler }, async (request) => {
     const u = request.authUser!;
-    const folderId = Number((request.params as { folderId: string }).folderId);
-    if (!Number.isFinite(folderId)) return reply.status(400).send({ error: "invalid id" });
-    if (!(await canAccessFolder(u.sub, u.role, folderId))) {
-      return reply.status(403).send({ error: "Forbidden" });
-    }
+    const folderId = parseIdParam(request, "folderId");
+    if (!(await canAccessFolder(u.sub, u.role, folderId))) throw new AccessError();
     const list = await db
       .select()
       .from(screens)

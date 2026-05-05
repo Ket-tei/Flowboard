@@ -8,118 +8,93 @@ import { createScreenSchema, updateScreenSchema, reorderItemsSchema, updateItemS
 import { db } from "../db/index.js";
 import { screenSchedules, screens } from "../db/schema.js";
 import { sql } from "drizzle-orm";
+import { parseIdParam } from "../lib/params.js";
+import { AccessError, BadRequestError } from "../lib/errors.js";
 export async function registerScreenRoutes(app) {
-    app.post("/folders/:folderId/screens", { preHandler: adminPreHandler }, async (request, reply) => {
-        const folderId = Number(request.params.folderId);
-        if (!Number.isFinite(folderId))
-            return reply.status(400).send({ error: "invalid folder" });
+    app.post("/folders/:folderId/screens", { preHandler: adminPreHandler }, async (request) => {
+        const folderId = parseIdParam(request, "folderId");
         await checkScreenLimit();
         const input = validate(createScreenSchema, request.body);
         const body = request.body;
         const displayMode = body.displayMode === "TEMPLATE" ? "TEMPLATE" : "QUICK";
         return createScreen(folderId, input, displayMode);
     });
-    app.get("/screens/:id", { preHandler: authPreHandler }, async (request, reply) => {
+    app.get("/screens/:id", { preHandler: authPreHandler }, async (request) => {
         const u = request.authUser;
-        const id = Number(request.params.id);
-        if (!Number.isFinite(id))
-            return reply.status(400).send({ error: "invalid id" });
-        if (!(await canAccessScreen(u.sub, u.role, id))) {
-            return reply.status(403).send({ error: "Forbidden" });
-        }
+        const id = parseIdParam(request);
+        if (!(await canAccessScreen(u.sub, u.role, id)))
+            throw new AccessError();
         return getScreenDetail(id);
     });
-    app.patch("/screens/:id", { preHandler: adminPreHandler }, async (request, reply) => {
-        const id = Number(request.params.id);
-        if (!Number.isFinite(id))
-            return reply.status(400).send({ error: "invalid id" });
+    app.patch("/screens/:id", { preHandler: adminPreHandler }, async (request) => {
+        const id = parseIdParam(request);
         const input = validate(updateScreenSchema, request.body);
         await updateScreen(id, input);
         return { ok: true };
     });
-    app.delete("/screens/:id", { preHandler: adminPreHandler }, async (request, reply) => {
-        const id = Number(request.params.id);
-        if (!Number.isFinite(id))
-            return reply.status(400).send({ error: "invalid id" });
+    app.delete("/screens/:id", { preHandler: adminPreHandler }, async (request) => {
+        const id = parseIdParam(request);
         await deleteScreen(id);
         return { ok: true };
     });
-    app.post("/screens/:id/items", { preHandler: authPreHandler }, async (request, reply) => {
+    app.post("/screens/:id/items", { preHandler: authPreHandler }, async (request) => {
         const u = request.authUser;
-        const screenId = Number(request.params.id);
-        if (!Number.isFinite(screenId))
-            return reply.status(400).send({ error: "invalid id" });
-        if (!(await canAccessScreen(u.sub, u.role, screenId))) {
-            return reply.status(403).send({ error: "Forbidden" });
-        }
+        const screenId = parseIdParam(request);
+        if (!(await canAccessScreen(u.sub, u.role, screenId)))
+            throw new AccessError();
         await checkMediaLimit(screenId);
         const mp = await request.file();
         if (!mp)
-            return reply.status(400).send({ error: "file required" });
+            throw new BadRequestError("file required");
         const q = request.query;
         const durationMs = Number(q.durationMs ?? 5000) || 5000;
         return uploadItem(screenId, { file: mp.file, mimetype: mp.mimetype, filename: mp.filename }, durationMs);
     });
-    app.patch("/screens/:id/items/order", { preHandler: authPreHandler }, async (request, reply) => {
+    app.patch("/screens/:id/items/order", { preHandler: authPreHandler }, async (request) => {
         const u = request.authUser;
-        const screenId = Number(request.params.id);
-        if (!Number.isFinite(screenId))
-            return reply.status(400).send({ error: "invalid id" });
-        if (!(await canAccessScreen(u.sub, u.role, screenId))) {
-            return reply.status(403).send({ error: "Forbidden" });
-        }
+        const screenId = parseIdParam(request);
+        if (!(await canAccessScreen(u.sub, u.role, screenId)))
+            throw new AccessError();
         const input = validate(reorderItemsSchema, request.body);
         await reorderItems(screenId, input);
         return { ok: true };
     });
-    app.patch("/screens/:id/items/:itemId", { preHandler: authPreHandler }, async (request, reply) => {
+    app.patch("/screens/:id/items/:itemId", { preHandler: authPreHandler }, async (request) => {
         const u = request.authUser;
-        const screenId = Number(request.params.id);
-        const itemId = Number(request.params.itemId);
-        if (!Number.isFinite(screenId) || !Number.isFinite(itemId)) {
-            return reply.status(400).send({ error: "invalid id" });
-        }
-        if (!(await canAccessScreen(u.sub, u.role, screenId))) {
-            return reply.status(403).send({ error: "Forbidden" });
-        }
+        const screenId = parseIdParam(request);
+        const itemId = parseIdParam(request, "itemId");
+        if (!(await canAccessScreen(u.sub, u.role, screenId)))
+            throw new AccessError();
         const input = validate(updateItemSchema, request.body);
         await updateItem(screenId, itemId, input);
         return { ok: true };
     });
-    app.delete("/screens/:id/items/:itemId", { preHandler: authPreHandler }, async (request, reply) => {
+    app.delete("/screens/:id/items/:itemId", { preHandler: authPreHandler }, async (request) => {
         const u = request.authUser;
-        const screenId = Number(request.params.id);
-        const itemId = Number(request.params.itemId);
-        if (!Number.isFinite(screenId) || !Number.isFinite(itemId)) {
-            return reply.status(400).send({ error: "invalid id" });
-        }
-        if (!(await canAccessScreen(u.sub, u.role, screenId))) {
-            return reply.status(403).send({ error: "Forbidden" });
-        }
+        const screenId = parseIdParam(request);
+        const itemId = parseIdParam(request, "itemId");
+        if (!(await canAccessScreen(u.sub, u.role, screenId)))
+            throw new AccessError();
         await deleteItem(screenId, itemId);
         return { ok: true };
     });
-    app.get("/screens/:id/schedule", { preHandler: authPreHandler }, async (request, reply) => {
+    app.get("/screens/:id/schedule", { preHandler: authPreHandler }, async (request) => {
         const u = request.authUser;
-        const screenId = Number(request.params.id);
-        if (!Number.isFinite(screenId))
-            return reply.status(400).send({ error: "invalid id" });
-        if (!(await canAccessScreen(u.sub, u.role, screenId))) {
-            return reply.status(403).send({ error: "Forbidden" });
-        }
+        const screenId = parseIdParam(request);
+        if (!(await canAccessScreen(u.sub, u.role, screenId)))
+            throw new AccessError();
         const slots = await db.select().from(screenSchedules).where(eq(screenSchedules.screenId, screenId));
         return { slots };
     });
-    app.put("/screens/:id/schedule", { preHandler: adminPreHandler }, async (request, reply) => {
-        const screenId = Number(request.params.id);
-        if (!Number.isFinite(screenId))
-            return reply.status(400).send({ error: "invalid id" });
+    app.put("/screens/:id/schedule", { preHandler: adminPreHandler }, async (request) => {
+        const screenId = parseIdParam(request);
         const body = request.body;
         if (!Array.isArray(body?.slots))
-            return reply.status(400).send({ error: "slots array required" });
+            throw new BadRequestError("slots array required");
+        const slots = body.slots;
         await db.delete(screenSchedules).where(eq(screenSchedules.screenId, screenId));
-        if (body.slots.length > 0) {
-            await db.insert(screenSchedules).values(body.slots.map((s) => ({
+        if (slots.length > 0) {
+            await db.insert(screenSchedules).values(slots.map((s) => ({
                 screenId,
                 dayOfWeek: s.dayOfWeek,
                 startTime: s.startTime,

@@ -5,6 +5,9 @@ import {
   screens,
   userFolderAccess,
   userScreenAccess,
+  templates,
+  userTemplateFolderAccess,
+  userTemplateAccess,
 } from "../db/schema.js";
 
 /**
@@ -107,4 +110,30 @@ export async function bumpScreenRevision(screenId: number): Promise<void> {
     .update(screens)
     .set({ revision: sql`${screens.revision} + 1` })
     .where(eq(screens.id, screenId));
+}
+
+export async function canAccessTemplate(
+  userId: number,
+  role: string,
+  templateId: number
+): Promise<boolean> {
+  if (role === "ADMIN") return true;
+  const tpl = await db
+    .select({ folderId: templates.folderId })
+    .from(templates)
+    .where(eq(templates.id, templateId))
+    .limit(1);
+  if (!tpl[0]) return false;
+  const folderAccess = await db
+    .select()
+    .from(userTemplateFolderAccess)
+    .where(and(eq(userTemplateFolderAccess.userId, userId), eq(userTemplateFolderAccess.templateFolderId, tpl[0].folderId)))
+    .limit(1);
+  if (folderAccess.length > 0) return true;
+  const direct = await db
+    .select()
+    .from(userTemplateAccess)
+    .where(and(eq(userTemplateAccess.userId, userId), eq(userTemplateAccess.templateId, templateId)))
+    .limit(1);
+  return direct.length > 0;
 }
