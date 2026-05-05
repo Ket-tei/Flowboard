@@ -22,6 +22,7 @@ export function localItemsToPreview(
         mimeType: it.file.type,
         url: it.previewUrl,
         transitionType: it.transitionType ?? "NONE",
+        transitionDurationMs: it.transitionDurationMs ?? 350,
       };
     }
     let url: string;
@@ -39,6 +40,7 @@ export function localItemsToPreview(
       mimeType: it.mimeType,
       url,
       transitionType: it.transitionType ?? "NONE",
+      transitionDurationMs: it.transitionDurationMs ?? 350,
     };
   });
 }

@@ -89,7 +89,7 @@ export function LivePreview({
             <span className="text-sm text-muted-foreground opacity-40">Aperçu du diaporama</span>
           </div>
         ) : (
-          <ScreenPlayer items={items} widgets={[]} onTime={setCurrentMs} />
+          <ScreenPlayer items={items} widgets={widgets} onTime={setCurrentMs} />
         )}
 
         {visibleWidgets.map((w) => (

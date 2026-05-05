@@ -22,6 +22,7 @@ import { AuthError } from "./services/auth.service.js";
 import { NotFoundError } from "./services/folder.service.js";
 import { ScreenError } from "./services/screen.service.js";
 import { UserError } from "./services/user.service.js";
+import { QuotaError } from "./services/quota.service.js";
 
 function parseCorsOrigins(): string[] {
   const raw = process.env.CORS_ORIGIN ?? "";
@@ -79,6 +80,9 @@ async function buildApp() {
     }
     if (error instanceof UserError) {
       return reply.status(error.statusCode).send({ error: error.message });
+    }
+    if (error instanceof QuotaError) {
+      return reply.status(429).send({ error: error.message, code: "QUOTA_EXCEEDED" });
     }
     const isProd = process.env.NODE_ENV === "production";
     app.log.error(error);

@@ -200,12 +200,21 @@
     "title": "Billing",
     "subtitle": "Manage your subscription and payments.",
     "currentPlan": "Current plan",
-    "planLabel": "Premium",
+    "planFree": "Free",
+    "planPremium": "Premium",
+    "planPro": "Pro",
     "status": "Status",
     "active": "Active",
-    "paymentSection": "Payment",
-    "paymentDesc": "Payment setup will be available soon.",
-    "setupPayment": "Set up payment"
+    "quotasSection": "Quotas",
+    "screensLimit": "Max screens",
+    "mediaLimit": "Max media / screen",
+    "usersLimit": "Max users",
+    "unlimited": "Unlimited",
+    "paymentSection": "Subscription",
+    "topPlan": "You are on the most complete plan.",
+    "upgradeToPremium": "Upgrade to Premium — €15/month",
+    "upgradeToPro": "Upgrade to Pro — €50/month",
+    "quotaExceeded": "Quota reached for your plan"
   },
   "help": {
     "subtitle": "Documentation and tutorials.",
@@ -291,7 +300,8 @@
     "unsavedIndicator": "unsaved",
     "dropFiles": "Drop files here",
     "saveError": "Save failed — check your connection",
-    "widgetAddError": "Failed to add widget"
+    "widgetAddError": "Failed to add widget",
+    "loadError": "Failed to load template"
   },
   "show": {
     "missingToken": "Missing token",

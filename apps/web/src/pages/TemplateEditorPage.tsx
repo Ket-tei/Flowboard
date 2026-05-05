@@ -1,4 +1,4 @@
-import { useEffect, useRef, useCallback, useState } from "react";
+import { useEffect, useRef, useCallback, useState, useMemo } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { ArrowLeft, Save } from "lucide-react";
@@ -82,9 +82,12 @@ export function TemplateEditorPage() {
     .filter((it) => !isPendingItem(it))
     .reduce((acc, it) => acc + (isPendingItem(it) ? 0 : it.durationMs), 0);
 
-  const previewItems = editor.dialogScreen
-    ? localItemsToPreview(editor.localItems, { templateId: editor.dialogScreen.id })
-    : [];
+  const previewItems = useMemo(
+    () => editor.dialogScreen
+      ? localItemsToPreview(editor.localItems, { templateId: editor.dialogScreen.id })
+      : [],
+    [editor.localItems, editor.dialogScreen]
+  );
 
   const handleBack = () => {
     if (editor.hasChanges) {

@@ -12,7 +12,10 @@ export async function authPreHandler(request, reply) {
         return reply.status(401).send({ error: "Invalid token" });
     }
 }
-export function requireAdmin(request, reply) {
+export async function adminPreHandler(request, reply) {
+    await authPreHandler(request, reply);
+    if (reply.sent)
+        return;
     if (request.authUser?.role !== "ADMIN") {
         return reply.status(403).send({ error: "Forbidden" });
     }

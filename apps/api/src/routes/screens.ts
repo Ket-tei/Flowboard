@@ -11,6 +11,7 @@ import {
   updateItem,
   deleteItem,
 } from "../services/screen.service.js";
+import { checkScreenLimit, checkMediaLimit } from "../services/quota.service.js";
 import { authPreHandler, adminPreHandler } from "../plugins/require-auth.js";
 import { validate } from "../schemas/validate.js";
 import {
@@ -27,6 +28,7 @@ export async function registerScreenRoutes(app: FastifyInstance) {
   app.post("/folders/:folderId/screens", { preHandler: adminPreHandler }, async (request, reply) => {
     const folderId = Number((request.params as { folderId: string }).folderId);
     if (!Number.isFinite(folderId)) return reply.status(400).send({ error: "invalid folder" });
+    await checkScreenLimit();
     const input = validate(createScreenSchema, request.body);
     const body = request.body as { displayMode?: string };
     const displayMode = body.displayMode === "TEMPLATE" ? "TEMPLATE" : "QUICK";
@@ -65,6 +67,7 @@ export async function registerScreenRoutes(app: FastifyInstance) {
     if (!(await canAccessScreen(u.sub, u.role, screenId))) {
       return reply.status(403).send({ error: "Forbidden" });
     }
+    await checkMediaLimit(screenId);
     const mp = await request.file();
     if (!mp) return reply.status(400).send({ error: "file required" });
     const q = request.query as { durationMs?: string };

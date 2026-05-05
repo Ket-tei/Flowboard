@@ -33,6 +33,7 @@ services:
       INSTANCE_SLUG: "{{INSTANCE_SLUG}}"
       INSTANCE_DELETE_TOKEN: "{{INSTANCE_DELETE_TOKEN}}"
       LANDING_API_URL: "{{LANDING_API_URL}}"
+      PLAN_ID: "{{PLAN_ID}}"
     volumes:
       - uploads_data:/data/uploads
     extra_hosts:

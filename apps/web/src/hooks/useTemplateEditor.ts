@@ -60,10 +60,13 @@ export function useTemplateEditor(onTreeChanged: () => Promise<void>) {
       setOriginalName(r.screen.name);
       setWidgets(r.widgets ?? []);
       setOriginalWidgets(r.widgets ?? []);
+    } catch (err) {
+      console.error("[loadTemplate]", err);
+      toast.error(t("templateEditor.loadError"));
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [t]);
 
   function onDragEnd(e: DragEndEvent) {
     const { active, over } = e;
@@ -156,7 +159,10 @@ export function useTemplateEditor(onTreeChanged: () => Promise<void>) {
   }
 
   async function saveChanges() {
-    if (!dialogScreen) return;
+    if (!dialogScreen) {
+      toast.error(t("templateEditor.loadError"));
+      return;
+    }
     setSaving(true);
     try {
       const templateId = dialogScreen.id;

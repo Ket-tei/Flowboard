@@ -6,6 +6,7 @@ import {
   updateUser,
   deleteUser,
 } from "../services/user.service.js";
+import { checkUserLimit } from "../services/quota.service.js";
 import { adminPreHandler } from "../plugins/require-auth.js";
 import { validate } from "../schemas/validate.js";
 import { createUserSchema, updateUserSchema } from "../schemas/user.schema.js";
@@ -22,6 +23,7 @@ export async function registerUserRoutes(app: FastifyInstance) {
   });
 
   app.post("/users", { preHandler: adminPreHandler }, async (request) => {
+    await checkUserLimit();
     const input = validate(createUserSchema, request.body);
     return createUser(input);
   });

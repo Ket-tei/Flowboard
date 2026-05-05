@@ -84,6 +84,7 @@ export async function provisionInstance({ slug, email, password, planId }) {
     INSTANCE_SLUG: slug,
     INSTANCE_DELETE_TOKEN: deleteToken,
     LANDING_API_URL: `${BASE_PROTOCOL}://${BASE_HOST}`,
+    PLAN_ID: planId,
   };
 
   const composeContent = await renderTemplate(slug, vars);

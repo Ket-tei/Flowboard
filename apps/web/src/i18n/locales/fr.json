@@ -200,12 +200,21 @@
     "title": "Facturation",
     "subtitle": "Gérez votre abonnement et vos paiements.",
     "currentPlan": "Plan actuel",
-    "planLabel": "Premium",
+    "planFree": "Gratuit",
+    "planPremium": "Premium",
+    "planPro": "Pro",
     "status": "Statut",
     "active": "Actif",
-    "paymentSection": "Paiement",
-    "paymentDesc": "La configuration du paiement sera bientôt disponible.",
-    "setupPayment": "Configurer le paiement"
+    "quotasSection": "Quotas",
+    "screensLimit": "Écrans max",
+    "mediaLimit": "Médias / écran max",
+    "usersLimit": "Utilisateurs max",
+    "unlimited": "Illimité",
+    "paymentSection": "Abonnement",
+    "topPlan": "Vous êtes sur le plan le plus complet.",
+    "upgradeToPremium": "Passer en Premium — 15 €/mois",
+    "upgradeToPro": "Passer en Pro — 50 €/mois",
+    "quotaExceeded": "Quota atteint pour votre plan"
   },
   "help": {
     "subtitle": "Documentation et tutoriels.",
@@ -291,7 +300,8 @@
     "unsavedIndicator": "non enregistré",
     "dropFiles": "Déposer des fichiers ici",
     "saveError": "Échec de la sauvegarde — vérifiez votre connexion",
-    "widgetAddError": "Impossible d'ajouter le widget"
+    "widgetAddError": "Impossible d'ajouter le widget",
+    "loadError": "Impossible de charger le modèle"
   },
   "show": {
     "missingToken": "Jeton manquant",

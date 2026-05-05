@@ -1,6 +1,6 @@
 import { db } from "../db/index.js";
 import { folders, screens } from "../db/schema.js";
-import { authPreHandler, requireAdmin } from "../plugins/require-auth.js";
+import { adminPreHandler } from "../plugins/require-auth.js";
 function buildTree(folderRows, screensByFolder, parentId) {
     return folderRows
         .filter((r) => (r.parentId ?? null) === parentId)
@@ -14,15 +14,13 @@ function buildTree(folderRows, screensByFolder, parentId) {
             id: s.id,
             name: s.name,
             publicToken: s.publicToken,
+            displayMode: s.displayMode,
         })),
         children: buildTree(folderRows, screensByFolder, r.id),
     }));
 }
 export async function registerAdminTreeRoutes(app) {
-    app.get("/admin/folder-screen-tree", { preHandler: authPreHandler }, async (request, reply) => {
-        const err = requireAdmin(request, reply);
-        if (err)
-            return err;
+    app.get("/admin/folder-screen-tree", { preHandler: adminPreHandler }, async () => {
         const allFolders = await db.select().from(folders);
         const allScreens = await db.select().from(screens);
         const map = new Map();

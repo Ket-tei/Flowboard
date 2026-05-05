@@ -1,12 +1,18 @@
 import { createReadStream } from "node:fs";
-import path from "node:path";
 import { stat } from "node:fs/promises";
-import { eq, and } from "drizzle-orm";
+import { eq, and, lte, gt } from "drizzle-orm";
 import { db } from "../db/index.js";
-import { screenItems, screens } from "../db/schema.js";
-function uploadDir() {
-    return path.resolve(process.env.UPLOAD_DIR ?? "./data/uploads");
+import { screenItems, screens, screenSchedules, templateItems, templateWidgets } from "../db/schema.js";
+function safeParseJson(raw) {
+    try {
+        const v = JSON.parse(raw);
+        return v && typeof v === "object" && !Array.isArray(v) ? v : {};
+    }
+    catch {
+        return {};
+    }
 }
+import { resolveFilePath } from "../services/upload.service.js";
 export async function registerPublicRoutes(app) {
     app.get("/public/screens/:token/manifest", async (request, reply) => {
         const token = request.params.token;
@@ -17,6 +23,54 @@ export async function registerPublicRoutes(app) {
             .limit(1);
         if (!scr[0]) {
             return reply.status(404).send({ error: "not found" });
+        }
+        if (scr[0].displayMode === "TEMPLATE") {
+            const now = new Date();
+            const dow = now.getDay();
+            const hhmm = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
+            const slot = await db
+                .select()
+                .from(screenSchedules)
+                .where(and(eq(screenSchedules.screenId, scr[0].id), eq(screenSchedules.dayOfWeek, dow), lte(screenSchedules.startTime, hhmm), gt(screenSchedules.endTime, hhmm)))
+                .limit(1);
+            if (!slot[0]) {
+                return { revision: scr[0].revision, screenId: scr[0].id, items: [], widgets: [] };
+            }
+            const [tplItems, widgets] = await Promise.all([
+                db
+                    .select()
+                    .from(templateItems)
+                    .where(eq(templateItems.templateId, slot[0].templateId))
+                    .orderBy(templateItems.sortOrder, templateItems.id),
+                db
+                    .select()
+                    .from(templateWidgets)
+                    .where(eq(templateWidgets.templateId, slot[0].templateId)),
+            ]);
+            return {
+                revision: scr[0].revision,
+                screenId: scr[0].id,
+                items: tplItems.map((it) => ({
+                    id: it.id,
+                    type: it.type,
+                    durationMs: it.durationMs,
+                    mimeType: it.mimeType,
+                    url: `/api/public/templates/${slot[0].templateId}/media/${it.id}`,
+                    transitionType: it.transitionType,
+                    transitionDurationMs: it.transitionDurationMs,
+                })),
+                widgets: widgets.map((widget) => ({
+                    id: widget.id,
+                    type: widget.type,
+                    config: safeParseJson(widget.config),
+                    x: Number(widget.x),
+                    y: Number(widget.y),
+                    w: Number(widget.w),
+                    h: Number(widget.h),
+                    startMs: widget.startMs,
+                    endMs: widget.endMs,
+                })),
+            };
         }
         const items = await db
             .select()
@@ -32,7 +86,9 @@ export async function registerPublicRoutes(app) {
                 durationMs: it.durationMs,
                 mimeType: it.mimeType,
                 url: `/api/public/screens/${encodeURIComponent(token)}/media/${it.id}`,
+                transitionType: "NONE",
             })),
+            widgets: [],
         };
     });
     app.get("/public/screens/:token/media/:itemId", async (request, reply) => {
@@ -57,18 +113,37 @@ export async function registerPublicRoutes(app) {
         if (!item[0]) {
             return reply.status(404).send({ error: "not found" });
         }
-        const full = path.join(uploadDir(), item[0].storageKey);
+        const full = resolveFilePath(item[0].storageKey);
+        let fileStat;
         try {
-            const st = await stat(full);
-            if (!st.isFile()) {
+            fileStat = await stat(full);
+            if (!fileStat.isFile()) {
                 return reply.status(404).send({ error: "not found" });
             }
         }
         catch {
             return reply.status(404).send({ error: "not found" });
         }
-        reply.header("Content-Type", item[0].mimeType);
+        const totalSize = fileStat.size;
+        const mime = item[0].mimeType;
+        const rangeHeader = request.headers.range;
+        reply.header("Accept-Ranges", "bytes");
         reply.header("Cache-Control", "public, max-age=31536000, immutable");
+        if (rangeHeader) {
+            const match = /bytes=(\d+)-(\d*)/.exec(rangeHeader);
+            if (match) {
+                const start = parseInt(match[1], 10);
+                const end = match[2] ? parseInt(match[2], 10) : totalSize - 1;
+                const chunkSize = end - start + 1;
+                reply.status(206);
+                reply.header("Content-Type", mime);
+                reply.header("Content-Range", `bytes ${start}-${end}/${totalSize}`);
+                reply.header("Content-Length", chunkSize);
+                return reply.send(createReadStream(full, { start, end }));
+            }
+        }
+        reply.header("Content-Type", mime);
+        reply.header("Content-Length", totalSize);
         return reply.send(createReadStream(full));
     });
 }

@@ -147,6 +147,11 @@ export const userTemplateAccess = mysqlTable(
   (t) => [primaryKey({ columns: [t.userId, t.templateId] })]
 );
 
+export const instanceConfig = mysqlTable("instance_config", {
+  id: int("id").primaryKey().default(1),
+  planId: mysqlEnum("plan_id", ["FREE", "PREMIUM", "PRO"]).notNull().default("FREE"),
+});
+
 export const screenSchedules = mysqlTable("screen_schedules", {
   id: bigint("id", { mode: "number" }).primaryKey().autoincrement(),
   screenId: bigint("screen_id", { mode: "number" }).notNull(),
