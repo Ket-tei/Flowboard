@@ -115,7 +115,7 @@ export function MediaDialog({
   return (
     <>
       <Dialog open={!!screen} onOpenChange={(o) => !o && onClose()}>
-        <DialogContent className="flex h-[85vh] w-[95vw] max-w-[95vw] flex-col gap-0 overflow-hidden rounded-2xl border-border/60 p-0 shadow-xl md:w-[80vw] md:max-w-[80vw]">
+        <DialogContent className="flex h-[85vh] w-[95vw] max-w-[95vw] sm:max-w-[95vw] flex-col gap-0 overflow-hidden rounded-2xl border-border/60 p-0 shadow-xl md:w-[80vw] md:max-w-[80vw]">
           <DialogHeader className="shrink-0 border-b border-border/40 px-6 py-3">
             <div className="flex items-center gap-3">
               {onChangeMode && (

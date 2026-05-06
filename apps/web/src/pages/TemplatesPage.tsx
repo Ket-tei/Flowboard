@@ -209,7 +209,6 @@ export function TemplatesPage() {
                       tree.setSelectedFolderId(folderId);
                     }}
                     onOpenDialog={(s) => navigate(`/app/templates/${s.id}/edit`)}
-                    onCopyUrl={() => undefined}
                     onDragStart={tree.onDragStart}
                     onDropOnFolder={(e, folderId) => void tree.onDropOnFolder(e, folderId)}
                     onCreateFolder={(parentId) => openCreateDialog("folder", parentId)}

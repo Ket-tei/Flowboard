@@ -33,7 +33,7 @@ function ScreenItem({
   onDragStart: (e: React.DragEvent, payload: { type: "folder" | "screen"; id: number }) => void;
   onSelectScreen: (folderId: number, screenId: number) => void;
   onOpenDialog: (s: ScreenRow) => void;
-  onCopyUrl: (token: string) => void;
+  onCopyUrl?: (token: string) => void;
   onDelete: (type: "folder" | "screen", id: number, label: string) => void;
   t: (key: string) => string;
 }) {
@@ -66,21 +66,23 @@ function ScreenItem({
       >
         <Monitor className="size-3.5 shrink-0 opacity-50" />
         <span className="truncate">{screen.name}</span>
-        <span className="ml-auto flex shrink-0 items-center opacity-100">
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            className="h-6 rounded-full px-2 text-[10px] opacity-100"
-            onClick={(e) => {
-              e.stopPropagation();
-              onCopyUrl(screen.publicToken);
-            }}
-          >
-            <Copy className="mr-0.5 size-3" />
-            {t("screens.copyUrl")}
-          </Button>
-        </span>
+        {onCopyUrl && (
+          <span className="ml-auto flex shrink-0 items-center opacity-100">
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="h-6 rounded-full px-2 text-[10px] opacity-100"
+              onClick={(e) => {
+                e.stopPropagation();
+                onCopyUrl(screen.publicToken);
+              }}
+            >
+              <Copy className="mr-0.5 size-3" />
+              {t("screens.copyUrl")}
+            </Button>
+          </span>
+        )}
       </ContextMenuTrigger>
       <ContextMenuContent className="rounded-xl">
         <ContextMenuItem
@@ -128,7 +130,7 @@ export function FolderRow({
   onSelectFolder: (id: number) => void;
   onSelectScreen: (folderId: number, screenId: number) => void;
   onOpenDialog: (s: ScreenRow) => void;
-  onCopyUrl: (token: string) => void;
+  onCopyUrl?: (token: string) => void;
   onDragStart: (e: React.DragEvent, payload: { type: "folder" | "screen"; id: number }) => void;
   onDropOnFolder: (e: React.DragEvent, folderId: number) => void;
   onCreateFolder: (parentId: number) => void;

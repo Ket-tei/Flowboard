@@ -36,14 +36,14 @@ export function UserForm({ open, onOpenChange, form, updateForm, tree, templateT
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl overflow-hidden rounded-2xl border-border/60 p-0">
-        <DialogHeader className="border-b border-border/40 px-6 py-4">
+      <DialogContent className="flex max-h-[90vh] max-w-2xl sm:max-w-2xl flex-col overflow-hidden rounded-2xl border-border/60 p-0">
+        <DialogHeader className="shrink-0 border-b border-border/40 px-6 py-4">
           <DialogTitle className="text-base">
             {form.editId == null ? t("accounts.add") : t("accounts.edit")}
           </DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-5 px-6 py-5">
+        <div className="flex-1 overflow-y-auto space-y-5 px-6 py-5">
           <div className="space-y-1.5">
             <Label className="text-xs font-medium text-muted-foreground">
               {t("accounts.username")}
@@ -173,7 +173,7 @@ export function UserForm({ open, onOpenChange, form, updateForm, tree, templateT
           )}
         </div>
 
-        <div className="flex justify-end border-t border-border/40 bg-muted/20 px-6 py-3.5">
+        <div className="shrink-0 flex justify-end border-t border-border/40 bg-muted/20 px-6 py-3.5">
           <Button
             type="button"
             size="sm"

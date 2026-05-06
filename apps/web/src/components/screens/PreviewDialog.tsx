@@ -28,7 +28,7 @@ export function PreviewDialog({
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
       <DialogContent
         showCloseButton={false}
-        className="flex h-[90vh] w-[90vw] max-w-[90vw] flex-col gap-0 overflow-hidden rounded-2xl border-border/60 p-0 shadow-xl"
+        className="flex h-[90vh] w-[90vw] max-w-[90vw] sm:max-w-[90vw] flex-col gap-0 overflow-hidden rounded-2xl border-border/60 p-0 shadow-xl"
       >
         <DialogHeader className="shrink-0 border-b border-border/40 px-5 py-2.5">
           <div className="flex items-center justify-between">
