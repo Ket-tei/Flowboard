@@ -7,6 +7,7 @@ import type { TemplateWidget } from "@/types/screen.types";
 
 const WIDGET_DEFS = [
   { type: "WEATHER_CURRENT" as const, labelKey: "templateWidgets.WEATHER_CURRENT" },
+  { type: "TEXT" as const, labelKey: "templateWidgets.TEXT" },
 ];
 
 interface WidgetPickerPopoverProps {
@@ -45,16 +46,17 @@ export function WidgetPickerPopover({ onAdd }: WidgetPickerPopoverProps) {
     setOpen((o) => !o);
   }
 
-  async function pick(type: "WEATHER_CURRENT") {
+  async function pick(type: "WEATHER_CURRENT" | "TEXT") {
     setAdding(true);
+    const isText = type === "TEXT";
     try {
       await onAdd({
         type,
-        config: {},
+        config: isText ? { text: "Texte", fontFamily: "sans", color: "#ffffff", align: "center" } : {},
         x: 0.05,
         y: 0.05,
-        w: 0.25,
-        h: 0.18,
+        w: isText ? 0.35 : 0.25,
+        h: isText ? 0.12 : 0.18,
         startMs: null,
         endMs: null,
       });

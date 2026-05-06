@@ -173,6 +173,7 @@ export function TemplateEditorPage() {
             items={previewItems}
             widgets={editor.widgets}
             onWidgetChange={editor.updateWidgetGeometry}
+            onWidgetConfigChange={editor.updateWidgetConfig}
           />
         </div>
 

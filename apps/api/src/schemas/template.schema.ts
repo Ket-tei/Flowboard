@@ -2,7 +2,7 @@ import { z } from "zod";
 
 export const TRANSITION_VALUES = ["NONE", "FADE", "SLIDE_LEFT", "SLIDE_UP"] as const;
 export const WIDGET_POSITIONS = ["TOP_LEFT", "TOP_RIGHT", "BOTTOM_LEFT", "BOTTOM_RIGHT"] as const;
-export const WIDGET_TYPES = ["WEATHER_CURRENT"] as const;
+export const WIDGET_TYPES = ["WEATHER_CURRENT", "TEXT"] as const;
 
 export type TransitionValue = typeof TRANSITION_VALUES[number];
 export type WidgetPosition = typeof WIDGET_POSITIONS[number];

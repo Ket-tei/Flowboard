@@ -263,6 +263,7 @@
     "add": "Ajouter un widget",
     "remove": "Supprimer",
     "WEATHER_CURRENT": "Météo actuelle",
+    "TEXT": "Texte",
     "position": "Position",
     "city": "Ville",
     "cityPlaceholder": "Rechercher une ville…",

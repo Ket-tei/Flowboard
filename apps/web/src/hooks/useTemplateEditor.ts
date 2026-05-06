@@ -44,6 +44,7 @@ export function useTemplateEditor(onTreeChanged: () => Promise<void>) {
       if (!o || w.id !== o.id) return true;
       if (w.x !== o.x || w.y !== o.y || w.w !== o.w || w.h !== o.h) return true;
       if (w.startMs !== o.startMs || w.endMs !== o.endMs) return true;
+      if (JSON.stringify(w.config) !== JSON.stringify(o.config)) return true;
     }
     return false;
   }, [editedName, originalName, localItems, originalItems, widgets, originalWidgets]);
@@ -130,6 +131,10 @@ export function useTemplateEditor(onTreeChanged: () => Promise<void>) {
 
   function updateWidgetTiming(id: number, timing: { startMs: number | null; endMs: number | null }) {
     setWidgets((prev) => prev.map((widget) => (widget.id === id ? { ...widget, ...timing } : widget)));
+  }
+
+  function updateWidgetConfig(id: number, config: Record<string, unknown>) {
+    setWidgets((prev) => prev.map((widget) => (widget.id === id ? { ...widget, config } : widget)));
   }
 
   async function addWidget(widget: Omit<TemplateWidget, "id">) {
@@ -232,10 +237,15 @@ export function useTemplateEditor(onTreeChanged: () => Promise<void>) {
         if (!orig) continue;
         const geomChanged = widget.x !== orig.x || widget.y !== orig.y || widget.w !== orig.w || widget.h !== orig.h;
         const timingChanged = widget.startMs !== orig.startMs || widget.endMs !== orig.endMs;
-        if (geomChanged || timingChanged) {
+        const configChanged = JSON.stringify(widget.config) !== JSON.stringify(orig.config);
+        if (geomChanged || timingChanged || configChanged) {
           await apiFetch(`/api/templates/${templateId}/widgets/${widget.id}`, {
             method: "PATCH",
-            body: JSON.stringify({ x: widget.x, y: widget.y, w: widget.w, h: widget.h, startMs: widget.startMs, endMs: widget.endMs }),
+            body: JSON.stringify({
+              x: widget.x, y: widget.y, w: widget.w, h: widget.h,
+              startMs: widget.startMs, endMs: widget.endMs,
+              ...(configChanged ? { config: widget.config } : {}),
+            }),
           });
         }
       }
@@ -290,6 +300,7 @@ export function useTemplateEditor(onTreeChanged: () => Promise<void>) {
     uploadFiles,
     updateWidgetGeometry,
     updateWidgetTiming,
+    updateWidgetConfig,
     addWidget,
     removeWidget,
     saveChanges,

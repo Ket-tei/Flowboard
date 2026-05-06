@@ -2,6 +2,12 @@ import { useCallback, useEffect, useRef, useState, type ReactNode } from "react"
 import { apiUrl } from "@/lib/api";
 import type { TemplateWidget } from "@/types/screen.types";
 import { WeatherOverlay } from "./WeatherOverlay";
+import { TextOverlay } from "./TextOverlay";
+
+function renderDefaultWidget(w: TemplateWidget): ReactNode {
+  if (w.type === "TEXT") return <TextOverlay key={w.id} widget={w} />;
+  return <WeatherOverlay key={w.id} widget={w} />;
+}
 
 export type PlayerItem = {
   id: number | string;
@@ -162,7 +168,7 @@ export function ScreenPlayer({
 
       {/* Widgets overlay */}
       {widgets.map((w) =>
-        renderWidget ? renderWidget(w) : <WeatherOverlay key={w.id} widget={w} />
+        renderWidget ? renderWidget(w) : renderDefaultWidget(w)
       )}
     </div>
   );

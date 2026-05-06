@@ -21,7 +21,7 @@ export type ScreenItem = {
   transitionDurationMs?: number;
 };
 
-export type WidgetType = "WEATHER_CURRENT";
+export type WidgetType = "WEATHER_CURRENT" | "TEXT";
 
 export type TemplateWidget = {
   id: number;

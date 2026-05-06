@@ -118,7 +118,7 @@ export const templateItems = mysqlTable("template_items", {
 export const templateWidgets = mysqlTable("template_widgets", {
   id: bigint("id", { mode: "number" }).primaryKey().autoincrement(),
   templateId: bigint("template_id", { mode: "number" }).notNull(),
-  type: mysqlEnum("type", ["WEATHER_CURRENT"]).notNull(),
+  type: mysqlEnum("type", ["WEATHER_CURRENT", "TEXT"]).notNull(),
   position: mysqlEnum("position", ["TOP_LEFT", "TOP_RIGHT", "BOTTOM_LEFT", "BOTTOM_RIGHT"]).notNull().default("TOP_RIGHT"),
   config: varchar("config", { length: 1024 }).notNull().default("{}"),
   x: decimal("x", { precision: 5, scale: 4 }).notNull().default("0.8500"),

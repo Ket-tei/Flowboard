@@ -1,6 +1,12 @@
 import { useRef, useCallback } from "react";
 import type { TemplateWidget } from "@/types/screen.types";
 import { WeatherOverlay } from "@/components/show/WeatherOverlay";
+import { TextOverlay } from "@/components/show/TextOverlay";
+
+function WidgetContent({ widget }: { widget: TemplateWidget }) {
+  if (widget.type === "TEXT") return <TextOverlay widget={widget} inline />;
+  return <WeatherOverlay widget={widget} inline />;
+}
 
 type Geometry = { x: number; y: number; w: number; h: number };
 
@@ -85,12 +91,14 @@ export function EditableWidgetOverlay({
       }}
       onClick={(e) => { e.stopPropagation(); onSelect(); }}
     >
-      {/* Content */}
+      {/* Content — pointer-events-none so mouse events fall through to drag handler */}
       <div
         className="absolute inset-0 cursor-grab active:cursor-grabbing"
         onMouseDown={(e) => startDrag(e, "body")}
       >
-        <WeatherOverlay widget={widget} inline />
+        <div className="pointer-events-none h-full w-full">
+          <WidgetContent widget={widget} />
+        </div>
       </div>
 
       {/* Resize handles — only shown when selected */}

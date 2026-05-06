@@ -15,9 +15,17 @@ interface WidgetTrackProps {
 }
 
 function getWidgetColor(widget: TemplateWidget): string {
-  return widget.type === "WEATHER_CURRENT"
-    ? "oklch(0.48 0.12 220)"
-    : "oklch(0.50 0.12 300)";
+  if (widget.type === "WEATHER_CURRENT") return "oklch(0.48 0.12 220)";
+  if (widget.type === "TEXT") return "oklch(0.48 0.12 60)";
+  return "oklch(0.50 0.12 300)";
+}
+
+function getWidgetLabel(widget: TemplateWidget): string {
+  if (widget.type === "TEXT") {
+    const text = (widget.config as { text?: string }).text;
+    return text ? text.slice(0, 20) : "Texte";
+  }
+  return (widget.config as { city?: string }).city ?? "Météo";
 }
 
 export function WidgetTrack({
@@ -112,7 +120,7 @@ export function WidgetTrack({
                     textOverflow: "ellipsis",
                   }}
                 >
-                  {(w.config as { city?: string }).city ?? t("templateWidgets.WEATHER_CURRENT")}
+                  {getWidgetLabel(w)}
                 </span>
                 <span style={{ fontSize: 9, color: "rgba(255,255,255,0.6)" }}>
                   {msToLabel(effectiveEnd - effectiveStart)}
