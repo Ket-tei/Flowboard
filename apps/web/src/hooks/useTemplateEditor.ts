@@ -264,7 +264,7 @@ export function useTemplateEditor(onTreeChanged: () => Promise<void>) {
       setOriginalWidgets(r.widgets ?? []);
     } catch (err) {
       console.error("[saveChanges]", err);
-      toast.error(t("templateEditor.saveError"));
+      toast.error((err instanceof Error ? err.message : null) || t("templateEditor.saveError"));
     } finally {
       setSaving(false);
     }

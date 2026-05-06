@@ -111,6 +111,7 @@
     "parentFolder": "Parent folder",
     "rootLevel": "Root (no parent)",
     "saved": "Changes saved",
+    "saveError": "Save failed",
     "displayMode": "Display mode",
     "modeQuick": "Quick display",
     "modeQuickDesc": "Directly plays media added to the screen",

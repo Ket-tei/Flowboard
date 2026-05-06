@@ -83,7 +83,7 @@ export function EditableWidgetOverlay({
         width: `${widget.w * 100}%`,
         height: `${widget.h * 100}%`,
       }}
-      onClick={onSelect}
+      onClick={(e) => { e.stopPropagation(); onSelect(); }}
     >
       {/* Content */}
       <div

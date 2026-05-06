@@ -194,6 +194,9 @@ export function useMediaDialog(onTreeChanged: () => Promise<void>) {
       setOriginalItems(sorted);
       setEditedName(r.screen.name);
       setOriginalName(r.screen.name);
+    } catch (err) {
+      console.error("[saveChanges]", err);
+      toast.error((err instanceof Error ? err.message : null) || t("screens.saveError"));
     } finally {
       setSaving(false);
     }

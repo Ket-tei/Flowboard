@@ -111,6 +111,7 @@
     "parentFolder": "Dossier parent",
     "rootLevel": "Racine (aucun parent)",
     "saved": "Modifications enregistrées",
+    "saveError": "Échec de la sauvegarde",
     "displayMode": "Mode d'affichage",
     "modeQuick": "Affichage rapide",
     "modeQuickDesc": "Diffuse directement les médias ajoutés à l'écran",
