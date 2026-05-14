@@ -1,4 +1,5 @@
 import nodemailer from "nodemailer";
+import { MIN_RAM_BYTES, MIN_DISK_BYTES } from "./resources.mjs";
 
 const ALERT_TO = process.env.ALERT_EMAIL_TO ?? "admin@canope.org";
 const SMTP_FROM = process.env.SMTP_USER ?? "automation@canope.org";
@@ -33,8 +34,8 @@ export async function sendResourceAlert({ freeRamBytes, freeDiskBytes, slug, ema
         `Instance demandée : ${slug}`,
         `Email : ${email}`,
         "",
-        `RAM libre : ${toGB(freeRamBytes)} Go (minimum requis : 2 Go)`,
-        `Disque libre : ${toGB(freeDiskBytes)} Go (minimum requis : 5 Go)`,
+        `RAM libre : ${toGB(freeRamBytes)} Go (minimum requis : ${toGB(MIN_RAM_BYTES)} Go)`,
+        `Disque libre : ${toGB(freeDiskBytes)} Go (minimum requis : ${toGB(MIN_DISK_BYTES)} Go)`,
         "",
         "Veuillez libérer des ressources pour permettre la création de nouvelles instances.",
       ].join("\n"),

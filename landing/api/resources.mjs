@@ -2,8 +2,8 @@ import os from "node:os";
 import { statfs } from "node:fs/promises";
 import { APP_ROOT } from "./config.mjs";
 
-const MIN_RAM_BYTES = 2 * 1024 ** 3;  // 2 GB
-const MIN_DISK_BYTES = 5 * 1024 ** 3; // 5 GB
+export const MIN_RAM_BYTES = 0.7 * 1024 ** 3; // 0.7 GB
+export const MIN_DISK_BYTES = 2 * 1024 ** 3;  // 2 GB
 
 export async function checkHostResources() {
   const freeRamBytes = os.freemem();
