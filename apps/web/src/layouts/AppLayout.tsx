@@ -44,10 +44,15 @@ function NavItems({
   const { t } = useTranslation();
   const { user } = useAuth();
   const visible = useMemo(() => {
-    return items.filter(
-      (i) => !("adminOnly" in i && i.adminOnly) || user?.role === "ADMIN"
-    );
-  }, [user?.role]);
+    return items.filter((i) => {
+      if ("adminOnly" in i && i.adminOnly) return user?.role === "ADMIN";
+      if (user?.role === "USER" && user.visibleTabs !== null) {
+        const tabKey = i.to.replace("/app/", "");
+        return user.visibleTabs.includes(tabKey);
+      }
+      return true;
+    });
+  }, [user?.role, user?.visibleTabs]);
 
   return (
     <nav className={cn("flex flex-1 flex-col gap-0.5 px-2 pb-3", navClassName)}>

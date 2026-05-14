@@ -13,6 +13,7 @@ export type AuthUser = {
   id: number;
   username: string;
   role: "ADMIN" | "USER";
+  visibleTabs: string[] | null;
 };
 
 type AuthContextValue = {

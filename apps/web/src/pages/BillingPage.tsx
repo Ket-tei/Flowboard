@@ -1,23 +1,31 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { CreditCard, CheckCircle2, ArrowRight, Infinity as InfinityIcon } from "lucide-react";
+import { CreditCard, CheckCircle2, ArrowRight, Infinity as InfinityIcon, Monitor, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { apiFetch } from "@/lib/api";
 
 const STRIPE_PREMIUM_LINK = "https://buy.stripe.com/4gM3cvcuv0OT3Bval2bsc00";
 const STRIPE_PRO_LINK = "https://buy.stripe.com/9B600j0LN2X16NH50Ibsc01";
 
+// Slug = first subdomain label, used as client_reference_id for Stripe webhook matching.
+const INSTANCE_SLUG = window.location.hostname.split(".")[0] || "default";
+
 type PlanId = "FREE" | "PREMIUM" | "PRO";
 
 interface PlanLimits {
   screens: number;
-  mediaPerScreen: number;
+  users: number;
+}
+
+interface PlanUsage {
+  screens: number;
   users: number;
 }
 
 interface PlanInfo {
   planId: PlanId;
   limits: PlanLimits;
+  usage: PlanUsage;
 }
 
 const PLAN_LABEL_KEY: Record<PlanId, string> = {
@@ -32,17 +40,63 @@ const PLAN_BADGE_CLASS: Record<PlanId, string> = {
   PRO: "bg-violet-100 text-violet-700 dark:bg-violet-900/40 dark:text-violet-300",
 };
 
-function LimitValue({ value }: { value: number }) {
-  const { t } = useTranslation();
-  if (value === Infinity) {
-    return (
-      <span className="flex items-center gap-1 font-medium">
-        <InfinityIcon className="size-3.5" />
-        {t("billing.unlimited")}
-      </span>
-    );
-  }
-  return <span className="font-medium">{value}</span>;
+function usageColor(used: number, limit: number): string {
+  if (limit === Infinity) return "bg-emerald-500";
+  const ratio = used / limit;
+  if (ratio >= 0.9) return "bg-red-500";
+  if (ratio >= 0.7) return "bg-amber-500";
+  return "bg-emerald-500";
+}
+
+function usageTextColor(used: number, limit: number): string {
+  if (limit === Infinity) return "";
+  const ratio = used / limit;
+  if (ratio >= 0.9) return "text-red-600 dark:text-red-400";
+  if (ratio >= 0.7) return "text-amber-600 dark:text-amber-400";
+  return "";
+}
+
+function isNearLimit(used: number, limit: number): boolean {
+  if (limit === Infinity) return false;
+  return used / limit >= 0.9;
+}
+
+interface UsageBarProps {
+  icon: React.ReactNode;
+  label: string;
+  used: number;
+  limit: number;
+  formatLabel: (used: number, limit: number) => React.ReactNode;
+}
+
+function UsageBar({ icon, label, used, limit, formatLabel }: UsageBarProps) {
+  const barColor = usageColor(used, limit);
+  const textColor = usageTextColor(used, limit);
+  const pct = limit === Infinity ? 100 : Math.min(100, (used / limit) * 100);
+
+  return (
+    <div className="space-y-1.5">
+      <div className="flex items-center justify-between text-sm">
+        <span className="flex items-center gap-2 text-muted-foreground">
+          {icon}
+          {label}
+        </span>
+        <span className={`font-medium ${textColor}`}>{formatLabel(used, limit)}</span>
+      </div>
+      <div className="h-2 w-full rounded-full bg-muted overflow-hidden">
+        {limit === Infinity ? (
+          <div className="h-full w-full bg-emerald-500/30 flex items-center justify-center">
+            <div className="h-full w-8 bg-emerald-500 rounded-full" />
+          </div>
+        ) : (
+          <div
+            className={`h-full rounded-full transition-all ${barColor}`}
+            style={{ width: `${pct}%` }}
+          />
+        )}
+      </div>
+    </div>
+  );
 }
 
 export function BillingPage() {
@@ -57,9 +111,14 @@ export function BillingPage() {
 
   const planId = plan?.planId ?? "FREE";
   const limits = plan?.limits;
+  const usage = plan?.usage;
+
+  const screensAtLimit = limits && usage ? isNearLimit(usage.screens, limits.screens) : false;
+  const usersAtLimit = limits && usage ? isNearLimit(usage.users, limits.users) : false;
 
   return (
     <div className="space-y-6">
+      {/* Plan actuel */}
       <div className="rounded-xl border border-border/60 bg-card p-6">
         <div className="flex items-center gap-3 mb-4">
           <div className="flex size-10 items-center justify-center rounded-lg bg-blue-100 dark:bg-blue-900/30">
@@ -88,28 +147,53 @@ export function BillingPage() {
         </div>
       </div>
 
-      {limits && (
+      {/* Usage */}
+      {limits && usage && (
         <div className="rounded-xl border border-border/60 bg-card p-6 space-y-4">
           <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
-            {t("billing.quotasSection")}
+            {t("billing.usageSection")}
           </h3>
-          <div className="space-y-2">
-            <div className="flex items-center justify-between text-sm">
-              <span className="text-muted-foreground">{t("billing.screensLimit")}</span>
-              <LimitValue value={limits.screens} />
-            </div>
-            <div className="flex items-center justify-between text-sm">
-              <span className="text-muted-foreground">{t("billing.mediaLimit")}</span>
-              <LimitValue value={limits.mediaPerScreen} />
-            </div>
-            <div className="flex items-center justify-between text-sm">
-              <span className="text-muted-foreground">{t("billing.usersLimit")}</span>
-              <LimitValue value={limits.users} />
-            </div>
+          <div className="space-y-4">
+            <UsageBar
+              icon={<Monitor className="size-3.5" />}
+              label={t("billing.screensLimit")}
+              used={usage.screens}
+              limit={limits.screens}
+              formatLabel={(used, limit) =>
+                limit === Infinity ? (
+                  <span className="flex items-center gap-1">
+                    {used} / <InfinityIcon className="size-3.5" />
+                  </span>
+                ) : (
+                  `${used} / ${limit}`
+                )
+              }
+            />
+            <UsageBar
+              icon={<Users className="size-3.5" />}
+              label={t("billing.usersLimit")}
+              used={usage.users}
+              limit={limits.users}
+              formatLabel={(used, limit) =>
+                limit === Infinity ? (
+                  <span className="flex items-center gap-1">
+                    {used} / <InfinityIcon className="size-3.5" />
+                  </span>
+                ) : (
+                  `${used} / ${limit}`
+                )
+              }
+            />
           </div>
+          {(screensAtLimit || usersAtLimit) && (
+            <p className="text-xs text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/30 rounded-lg px-3 py-2">
+              {t("billing.usageNearLimit")}
+            </p>
+          )}
         </div>
       )}
 
+      {/* CTA upgrade */}
       <div className="rounded-xl border border-border/60 bg-card p-6 space-y-4">
         <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
           {t("billing.paymentSection")}
@@ -120,18 +204,17 @@ export function BillingPage() {
           <div className="flex flex-col gap-3">
             {planId === "FREE" && (
               <Button
-                variant="outline"
                 className="gap-2 w-fit"
-                onClick={() => window.open(STRIPE_PREMIUM_LINK, "_blank")}
+                onClick={() => window.open(`${STRIPE_PREMIUM_LINK}?client_reference_id=${INSTANCE_SLUG}`, "_blank")}
               >
                 {t("billing.upgradeToPremium")}
                 <ArrowRight className="size-4" />
               </Button>
             )}
             <Button
-              variant="outline"
+              variant={planId === "PREMIUM" ? "default" : "outline"}
               className="gap-2 w-fit"
-              onClick={() => window.open(STRIPE_PRO_LINK, "_blank")}
+              onClick={() => window.open(`${STRIPE_PRO_LINK}?client_reference_id=${INSTANCE_SLUG}`, "_blank")}
             >
               {t("billing.upgradeToPro")}
               <ArrowRight className="size-4" />

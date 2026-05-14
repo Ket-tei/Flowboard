@@ -3,12 +3,12 @@ import { Shield, User as UserIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
-  SelectValue,
 } from "@/components/ui/select";
 import {
   Dialog,
@@ -19,7 +19,8 @@ import {
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { AccessTree, collectDescendantIds } from "@/components/accounts/AccessTree";
 import type { TreeFolder } from "@/types/tree.types";
-import type { UserFormState } from "@/hooks/useUsersManager";
+import type { UserFormState, TabKey } from "@/hooks/useUsersManager";
+import { ALL_TABS } from "@/hooks/useUsersManager";
 
 type Props = {
   open: boolean;
@@ -31,8 +32,32 @@ type Props = {
   onSave: () => void;
 };
 
+const TAB_KEYS: TabKey[] = [...ALL_TABS];
+
 export function UserForm({ open, onOpenChange, form, updateForm, tree, templateTree, onSave }: Props) {
   const { t } = useTranslation();
+
+  function toggleTab(tab: TabKey, checked: boolean) {
+    const next = new Set(form.visibleTabs);
+    if (checked) next.add(tab);
+    else {
+      next.delete(tab);
+      // If screens tab removed, clear screen hierarchy
+      if (tab === "screens") {
+        updateForm({ visibleTabs: next, folderIds: new Set(), screenIds: new Set() });
+        return;
+      }
+      // If templates tab removed, clear template hierarchy
+      if (tab === "templates") {
+        updateForm({ visibleTabs: next, templateFolderIds: new Set(), templateIds: new Set() });
+        return;
+      }
+    }
+    updateForm({ visibleTabs: next });
+  }
+
+  const showScreens = form.visibleTabs.has("screens");
+  const showTemplates = form.visibleTabs.has("templates");
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -73,11 +98,26 @@ export function UserForm({ open, onOpenChange, form, updateForm, tree, templateT
             <Label className="text-xs font-medium text-muted-foreground">
               {t("accounts.role")}
             </Label>
-            <Select value={form.role} onValueChange={(v) => updateForm({ role: v as "ADMIN" | "USER" })}>
+            <Select
+              value={form.role}
+              onValueChange={(v) => updateForm({ role: v as "ADMIN" | "USER" })}
+            >
               <SelectTrigger className="h-10 w-full rounded-xl">
-                <SelectValue />
+                <span className="flex flex-1 items-center gap-2 text-sm">
+                  {form.role === "ADMIN" ? (
+                    <>
+                      <Shield className="size-3.5 shrink-0" />
+                      {t("accounts.admin")}
+                    </>
+                  ) : (
+                    <>
+                      <UserIcon className="size-3.5 shrink-0" />
+                      {t("accounts.user")}
+                    </>
+                  )}
+                </span>
               </SelectTrigger>
-              <SelectContent className="rounded-xl">
+              <SelectContent className="rounded-xl" alignItemWithTrigger={false} align="start">
                 <SelectItem value="ADMIN" className="rounded-lg">
                   <span className="flex items-center gap-2">
                     <Shield className="size-3.5" />
@@ -96,79 +136,103 @@ export function UserForm({ open, onOpenChange, form, updateForm, tree, templateT
 
           {form.role === "USER" && (
             <>
-              <div className="space-y-1.5">
+              {/* Visible tabs section */}
+              <div className="space-y-2">
                 <Label className="text-xs font-medium text-muted-foreground">
-                  {t("accounts.permissions")}
+                  {t("accounts.tabAccess")}
                 </Label>
-                <ScrollArea className="h-48 rounded-xl border border-border/60 bg-muted/20 p-3">
-                  <AccessTree
-                    nodes={tree}
-                    depth={0}
-                    folderIds={form.folderIds}
-                    screenIds={form.screenIds}
-                    onToggleFolder={(id, checked) => {
-                      const desc = collectDescendantIds(tree, id);
-                      const folderIds = new Set(form.folderIds);
-                      const screenIds = new Set(form.screenIds);
-                      if (checked) {
-                        folderIds.add(id);
-                        for (const cid of desc.folderIds) folderIds.add(cid);
-                        for (const sid of desc.screenIds) screenIds.add(sid);
-                      } else {
-                        folderIds.delete(id);
-                        for (const cid of desc.folderIds) folderIds.delete(cid);
-                        for (const sid of desc.screenIds) screenIds.delete(sid);
-                      }
-                      updateForm({ folderIds, screenIds });
-                    }}
-                    onToggleScreen={(id, checked) => {
-                      const screenIds = new Set(form.screenIds);
-                      if (checked) screenIds.add(id);
-                      else screenIds.delete(id);
-                      updateForm({ screenIds });
-                    }}
-                  />
-                </ScrollArea>
+                <div className="rounded-xl border border-border/60 bg-muted/20 px-4 py-3 grid grid-cols-2 gap-2">
+                  {TAB_KEYS.map((tab) => (
+                    <label key={tab} className="flex items-center gap-2 cursor-pointer text-sm">
+                      <Checkbox
+                        checked={form.visibleTabs.has(tab)}
+                        onCheckedChange={(v) => toggleTab(tab, v === true)}
+                      />
+                      <span>{t(`nav.${tab}`)}</span>
+                    </label>
+                  ))}
+                </div>
               </div>
 
-              <div className="space-y-1.5">
-                <Label className="text-xs font-medium text-muted-foreground">
-                  {t("accounts.templateAccess")}
-                </Label>
-                <ScrollArea className="h-48 rounded-xl border border-border/60 bg-muted/20 p-3">
-                  {templateTree.length === 0 ? (
-                    <p className="text-xs text-muted-foreground py-2">{t("templates.noTemplates")}</p>
-                  ) : (
+              {/* Screen hierarchy — only when screens tab is visible */}
+              {showScreens && (
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-medium text-muted-foreground">
+                    {t("accounts.permissions")}
+                  </Label>
+                  <ScrollArea className="h-48 rounded-xl border border-border/60 bg-muted/20 p-3">
                     <AccessTree
-                      nodes={templateTree}
+                      nodes={tree}
                       depth={0}
-                      folderIds={form.templateFolderIds}
-                      screenIds={form.templateIds}
+                      folderIds={form.folderIds}
+                      screenIds={form.screenIds}
                       onToggleFolder={(id, checked) => {
-                        const desc = collectDescendantIds(templateTree, id);
-                        const templateFolderIds = new Set(form.templateFolderIds);
-                        const templateIds = new Set(form.templateIds);
+                        const desc = collectDescendantIds(tree, id);
+                        const folderIds = new Set(form.folderIds);
+                        const screenIds = new Set(form.screenIds);
                         if (checked) {
-                          templateFolderIds.add(id);
-                          for (const cid of desc.folderIds) templateFolderIds.add(cid);
-                          for (const sid of desc.screenIds) templateIds.add(sid);
+                          folderIds.add(id);
+                          for (const cid of desc.folderIds) folderIds.add(cid);
+                          for (const sid of desc.screenIds) screenIds.add(sid);
                         } else {
-                          templateFolderIds.delete(id);
-                          for (const cid of desc.folderIds) templateFolderIds.delete(cid);
-                          for (const sid of desc.screenIds) templateIds.delete(sid);
+                          folderIds.delete(id);
+                          for (const cid of desc.folderIds) folderIds.delete(cid);
+                          for (const sid of desc.screenIds) screenIds.delete(sid);
                         }
-                        updateForm({ templateFolderIds, templateIds });
+                        updateForm({ folderIds, screenIds });
                       }}
                       onToggleScreen={(id, checked) => {
-                        const templateIds = new Set(form.templateIds);
-                        if (checked) templateIds.add(id);
-                        else templateIds.delete(id);
-                        updateForm({ templateIds });
+                        const screenIds = new Set(form.screenIds);
+                        if (checked) screenIds.add(id);
+                        else screenIds.delete(id);
+                        updateForm({ screenIds });
                       }}
                     />
-                  )}
-                </ScrollArea>
-              </div>
+                  </ScrollArea>
+                </div>
+              )}
+
+              {/* Template hierarchy — only when templates tab is visible */}
+              {showTemplates && (
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-medium text-muted-foreground">
+                    {t("accounts.templateAccess")}
+                  </Label>
+                  <ScrollArea className="h-48 rounded-xl border border-border/60 bg-muted/20 p-3">
+                    {templateTree.length === 0 ? (
+                      <p className="text-xs text-muted-foreground py-2">{t("templates.noTemplates")}</p>
+                    ) : (
+                      <AccessTree
+                        nodes={templateTree}
+                        depth={0}
+                        folderIds={form.templateFolderIds}
+                        screenIds={form.templateIds}
+                        onToggleFolder={(id, checked) => {
+                          const desc = collectDescendantIds(templateTree, id);
+                          const templateFolderIds = new Set(form.templateFolderIds);
+                          const templateIds = new Set(form.templateIds);
+                          if (checked) {
+                            templateFolderIds.add(id);
+                            for (const cid of desc.folderIds) templateFolderIds.add(cid);
+                            for (const sid of desc.screenIds) templateIds.add(sid);
+                          } else {
+                            templateFolderIds.delete(id);
+                            for (const cid of desc.folderIds) templateFolderIds.delete(cid);
+                            for (const sid of desc.screenIds) templateIds.delete(sid);
+                          }
+                          updateForm({ templateFolderIds, templateIds });
+                        }}
+                        onToggleScreen={(id, checked) => {
+                          const templateIds = new Set(form.templateIds);
+                          if (checked) templateIds.add(id);
+                          else templateIds.delete(id);
+                          updateForm({ templateIds });
+                        }}
+                      />
+                    )}
+                  </ScrollArea>
+                </div>
+              )}
             </>
           )}
         </div>

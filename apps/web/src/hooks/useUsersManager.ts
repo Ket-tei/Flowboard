@@ -5,11 +5,15 @@ import { apiFetch } from "@/lib/api";
 import type { TreeFolder } from "@/types/tree.types";
 import type { UserRow } from "@/types/user.types";
 
+export const ALL_TABS = ["dashboard", "screens", "templates", "billing", "settings", "help"] as const;
+export type TabKey = typeof ALL_TABS[number];
+
 export type UserFormState = {
   editId: number | null;
   username: string;
   password: string;
   role: "ADMIN" | "USER";
+  visibleTabs: Set<TabKey>;
   folderIds: Set<number>;
   screenIds: Set<number>;
   templateFolderIds: Set<number>;
@@ -21,6 +25,7 @@ const EMPTY_FORM: UserFormState = {
   username: "",
   password: "",
   role: "USER",
+  visibleTabs: new Set(ALL_TABS),
   folderIds: new Set(),
   screenIds: new Set(),
   templateFolderIds: new Set(),
@@ -75,11 +80,15 @@ export function useUsersManager() {
         screenIds: number[];
         templateFolderIds: number[];
         templateIds: number[];
+        visibleTabs: string[] | null;
       }>(`/api/users/${u.id}/access`);
       base.folderIds = new Set(a.folderIds);
       base.screenIds = new Set(a.screenIds);
       base.templateFolderIds = new Set(a.templateFolderIds ?? []);
       base.templateIds = new Set(a.templateIds ?? []);
+      base.visibleTabs = a.visibleTabs
+        ? new Set(a.visibleTabs.filter((t): t is TabKey => ALL_TABS.includes(t as TabKey)))
+        : new Set(ALL_TABS);
     }
     setForm(base);
     setFormOpen(true);
@@ -101,6 +110,7 @@ export function useUsersManager() {
           screenIds: form.role === "USER" ? [...form.screenIds] : [],
           templateFolderIds: form.role === "USER" ? [...form.templateFolderIds] : [],
           templateIds: form.role === "USER" ? [...form.templateIds] : [],
+          visibleTabs: form.role === "USER" ? [...form.visibleTabs] : [],
         }),
       });
       toast.success(t("accounts.created"));
@@ -112,6 +122,7 @@ export function useUsersManager() {
         body.screenIds = [...form.screenIds];
         body.templateFolderIds = [...form.templateFolderIds];
         body.templateIds = [...form.templateIds];
+        body.visibleTabs = [...form.visibleTabs];
       }
       await apiFetch(`/api/users/${form.editId}`, {
         method: "PATCH",
