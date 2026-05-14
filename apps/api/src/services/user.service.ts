@@ -3,22 +3,26 @@ import { eq } from "drizzle-orm";
 import { db } from "../db/index.js";
 import { users, userFolderAccess, userScreenAccess, userTemplateFolderAccess, userTemplateAccess } from "../db/schema.js";
 import type { UpdateUserInput } from "../schemas/user.schema.js";
+import { parseVisibleTabs } from "../lib/visible-tabs.js";
 
 export type UserRow = {
   id: number;
   username: string;
   role: "ADMIN" | "USER";
+  visibleTabs: string[] | null;
   createdAt: Date | null;
 };
 
 export async function listUsers(): Promise<UserRow[]> {
-  return db
-    .select({ id: users.id, username: users.username, role: users.role, createdAt: users.createdAt })
+  const rows = await db
+    .select({ id: users.id, username: users.username, role: users.role, visibleTabs: users.visibleTabs, createdAt: users.createdAt })
     .from(users);
+  return rows.map((r) => ({ ...r, visibleTabs: parseVisibleTabs(r.visibleTabs) }));
 }
 
 export async function getUserAccess(userId: number) {
-  const [folderRows, screenRows, tplFolderRows, tplRows] = await Promise.all([
+  const [userRows, folderRows, screenRows, tplFolderRows, tplRows] = await Promise.all([
+    db.select({ visibleTabs: users.visibleTabs }).from(users).where(eq(users.id, userId)).limit(1),
     db.select({ folderId: userFolderAccess.folderId }).from(userFolderAccess).where(eq(userFolderAccess.userId, userId)),
     db.select({ screenId: userScreenAccess.screenId }).from(userScreenAccess).where(eq(userScreenAccess.userId, userId)),
     db.select({ templateFolderId: userTemplateFolderAccess.templateFolderId }).from(userTemplateFolderAccess).where(eq(userTemplateFolderAccess.userId, userId)),
@@ -29,13 +33,15 @@ export async function getUserAccess(userId: number) {
     screenIds: screenRows.map((s) => s.screenId),
     templateFolderIds: tplFolderRows.map((r) => r.templateFolderId),
     templateIds: tplRows.map((r) => r.templateId),
+    visibleTabs: parseVisibleTabs(userRows[0]?.visibleTabs),
   };
 }
 
-export async function createUser(input: { username: string; password: string; role: "ADMIN" | "USER"; folderIds: number[]; screenIds: number[]; templateFolderIds: number[]; templateIds: number[] }): Promise<{ id: number }> {
+export async function createUser(input: { username: string; password: string; role: "ADMIN" | "USER"; folderIds: number[]; screenIds: number[]; templateFolderIds: number[]; templateIds: number[]; visibleTabs?: string[] }): Promise<{ id: number }> {
   const passwordHash = await bcrypt.hash(input.password, 12);
+  const visibleTabsVal = input.role === "USER" && input.visibleTabs?.length ? input.visibleTabs.join(",") : null;
   try {
-    await db.insert(users).values({ username: input.username, passwordHash, role: input.role });
+    await db.insert(users).values({ username: input.username, passwordHash, role: input.role, visibleTabs: visibleTabsVal });
   } catch {
     throw new UserError("username already taken", 409);
   }
@@ -49,12 +55,17 @@ export async function createUser(input: { username: string; password: string; ro
 }
 
 export async function updateUser(userId: number, input: UpdateUserInput): Promise<void> {
-  const updates: Partial<{ passwordHash: string; role: "ADMIN" | "USER" }> = {};
+  const updates: Partial<{ passwordHash: string; role: "ADMIN" | "USER"; visibleTabs: string | null }> = {};
   if (input.password) {
     updates.passwordHash = await bcrypt.hash(input.password, 12);
   }
   if (input.role !== undefined) {
     updates.role = input.role;
+  }
+  if (input.role === "ADMIN") {
+    updates.visibleTabs = null;
+  } else if (input.visibleTabs !== undefined) {
+    updates.visibleTabs = input.visibleTabs.length > 0 ? input.visibleTabs.join(",") : null;
   }
   if (Object.keys(updates).length) {
     await db.update(users).set(updates).where(eq(users.id, userId));

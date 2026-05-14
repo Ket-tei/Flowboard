@@ -8,6 +8,7 @@ export const createUserSchema = z.object({
   screenIds: z.array(z.number().int().positive()).default([]),
   templateFolderIds: z.array(z.number().int().positive()).default([]),
   templateIds: z.array(z.number().int().positive()).default([]),
+  visibleTabs: z.array(z.string()).optional(),
 });
 
 export const updateUserSchema = z.object({
@@ -17,6 +18,7 @@ export const updateUserSchema = z.object({
   screenIds: z.array(z.number().int().positive()).optional(),
   templateFolderIds: z.array(z.number().int().positive()).optional(),
   templateIds: z.array(z.number().int().positive()).optional(),
+  visibleTabs: z.array(z.string()).optional(),
 });
 
 export type CreateUserInput = z.output<typeof createUserSchema>;

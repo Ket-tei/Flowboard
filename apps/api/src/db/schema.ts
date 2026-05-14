@@ -16,6 +16,7 @@ export const users = mysqlTable("users", {
   username: varchar("username", { length: 128 }).notNull().unique(),
   passwordHash: varchar("password_hash", { length: 255 }).notNull(),
   role: mysqlEnum("role", ["ADMIN", "USER"]).notNull().default("USER"),
+  visibleTabs: varchar("visible_tabs", { length: 512 }),
   createdAt: timestamp("created_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
 });
 

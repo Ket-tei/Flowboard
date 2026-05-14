@@ -11,7 +11,7 @@ import {
   updateItem,
   deleteItem,
 } from "../services/screen.service.js";
-import { checkScreenLimit, checkMediaLimit } from "../services/quota.service.js";
+import { checkScreenLimit } from "../services/quota.service.js";
 import { authPreHandler, adminPreHandler } from "../plugins/require-auth.js";
 import { validate } from "../schemas/validate.js";
 import {
@@ -60,7 +60,6 @@ export async function registerScreenRoutes(app: FastifyInstance) {
     const u = request.authUser!;
     const screenId = parseIdParam(request);
     if (!(await canAccessScreen(u.sub, u.role, screenId))) throw new AccessError();
-    await checkMediaLimit(screenId);
     const mp = await request.file();
     if (!mp) throw new BadRequestError("file required");
     const q = request.query as { durationMs?: string };

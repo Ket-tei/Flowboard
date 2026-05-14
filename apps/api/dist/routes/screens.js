@@ -1,7 +1,7 @@
 import { eq } from "drizzle-orm";
 import { canAccessScreen } from "../services/access.service.js";
 import { createScreen, getScreenDetail, updateScreen, deleteScreen, uploadItem, reorderItems, updateItem, deleteItem, } from "../services/screen.service.js";
-import { checkScreenLimit, checkMediaLimit } from "../services/quota.service.js";
+import { checkScreenLimit } from "../services/quota.service.js";
 import { authPreHandler, adminPreHandler } from "../plugins/require-auth.js";
 import { validate } from "../schemas/validate.js";
 import { createScreenSchema, updateScreenSchema, reorderItemsSchema, updateItemSchema, } from "../schemas/screen.schema.js";
@@ -42,7 +42,6 @@ export async function registerScreenRoutes(app) {
         const screenId = parseIdParam(request);
         if (!(await canAccessScreen(u.sub, u.role, screenId)))
             throw new AccessError();
-        await checkMediaLimit(screenId);
         const mp = await request.file();
         if (!mp)
             throw new BadRequestError("file required");

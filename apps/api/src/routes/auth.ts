@@ -1,5 +1,5 @@
 import type { FastifyInstance } from "fastify";
-import { loginUser, getCurrentUser, AuthError } from "../services/auth.service.js";
+import { loginUser, getFullCurrentUser, AuthError } from "../services/auth.service.js";
 import { COOKIE_NAME } from "../lib/jwt.js";
 import { authPreHandler } from "../plugins/require-auth.js";
 import { validate } from "../schemas/validate.js";
@@ -25,7 +25,9 @@ export async function registerAuthRoutes(app: FastifyInstance) {
     return { ok: true };
   });
 
-  app.get("/auth/me", { preHandler: authPreHandler }, async (request) => {
-    return { user: getCurrentUser(request.authUser!) };
+  app.get("/auth/me", { preHandler: authPreHandler }, async (request, reply) => {
+    const user = await getFullCurrentUser(request.authUser!.sub);
+    if (!user) { reply.code(401); return { error: "user not found" }; }
+    return { user };
   });
 }

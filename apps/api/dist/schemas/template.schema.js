@@ -1,7 +1,7 @@
 import { z } from "zod";
 export const TRANSITION_VALUES = ["NONE", "FADE", "SLIDE_LEFT", "SLIDE_UP"];
 export const WIDGET_POSITIONS = ["TOP_LEFT", "TOP_RIGHT", "BOTTOM_LEFT", "BOTTOM_RIGHT"];
-export const WIDGET_TYPES = ["WEATHER_CURRENT"];
+export const WIDGET_TYPES = ["WEATHER_CURRENT", "TEXT"];
 export const createTemplateFolderSchema = z.object({
     name: z.string().trim().min(1).max(255),
     parentId: z.number().int().positive().nullable().optional(),

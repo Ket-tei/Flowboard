@@ -6,6 +6,7 @@ export const users = mysqlTable("users", {
     username: varchar("username", { length: 128 }).notNull().unique(),
     passwordHash: varchar("password_hash", { length: 255 }).notNull(),
     role: mysqlEnum("role", ["ADMIN", "USER"]).notNull().default("USER"),
+    visibleTabs: varchar("visible_tabs", { length: 512 }),
     createdAt: timestamp("created_at").default(sql `CURRENT_TIMESTAMP`).notNull(),
 });
 export const folders = mysqlTable("folders", {
@@ -87,7 +88,7 @@ export const templateItems = mysqlTable("template_items", {
 export const templateWidgets = mysqlTable("template_widgets", {
     id: bigint("id", { mode: "number" }).primaryKey().autoincrement(),
     templateId: bigint("template_id", { mode: "number" }).notNull(),
-    type: mysqlEnum("type", ["WEATHER_CURRENT"]).notNull(),
+    type: mysqlEnum("type", ["WEATHER_CURRENT", "TEXT"]).notNull(),
     position: mysqlEnum("position", ["TOP_LEFT", "TOP_RIGHT", "BOTTOM_LEFT", "BOTTOM_RIGHT"]).notNull().default("TOP_RIGHT"),
     config: varchar("config", { length: 1024 }).notNull().default("{}"),
     x: decimal("x", { precision: 5, scale: 4 }).notNull().default("0.8500"),

@@ -1,5 +1,8 @@
+import { eq } from "drizzle-orm";
 import { adminPreHandler } from "../plugins/require-auth.js";
-import { getInstancePlan, PLAN_LIMITS } from "../services/quota.service.js";
+import { getInstancePlan, PLAN_LIMITS, getInstanceUsage } from "../services/quota.service.js";
+import { db } from "../db/index.js";
+import { instanceConfig } from "../db/schema.js";
 const LANDING_API_URL = process.env.LANDING_API_URL ?? "";
 const INSTANCE_SLUG = process.env.INSTANCE_SLUG ?? "";
 const INSTANCE_DELETE_TOKEN = process.env.INSTANCE_DELETE_TOKEN ?? "";
@@ -7,7 +10,26 @@ export async function registerInstanceRoutes(app) {
     app.get("/instance/plan", { preHandler: adminPreHandler }, async () => {
         const planId = await getInstancePlan();
         const limits = PLAN_LIMITS[planId];
-        return { planId, limits };
+        const usage = await getInstanceUsage();
+        return { planId, limits, usage };
+    });
+    // Internal endpoint called by the landing API after a successful Stripe payment.
+    // Auth: Bearer {INSTANCE_DELETE_TOKEN} — shared secret provisioned at instance creation.
+    app.patch("/instance/plan", async (request, reply) => {
+        const token = request.headers.authorization?.replace(/^Bearer\s+/i, "");
+        if (!INSTANCE_DELETE_TOKEN || token !== INSTANCE_DELETE_TOKEN) {
+            return reply.status(401).send({ error: "Unauthorized" });
+        }
+        const body = request.body;
+        const planId = body?.planId;
+        if (!planId || !["FREE", "PREMIUM", "PRO"].includes(planId)) {
+            return reply.status(400).send({ error: "Invalid planId" });
+        }
+        await db
+            .update(instanceConfig)
+            .set({ planId: planId })
+            .where(eq(instanceConfig.id, 1));
+        return { ok: true, planId };
     });
     app.delete("/instance/self", { preHandler: adminPreHandler }, async (_request, reply) => {
         if (!LANDING_API_URL || !INSTANCE_SLUG || !INSTANCE_DELETE_TOKEN) {
