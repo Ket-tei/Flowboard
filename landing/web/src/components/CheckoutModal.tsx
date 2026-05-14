@@ -72,6 +72,9 @@ export function CheckoutModal({ planId, planName, onClose }: Props) {
         if (data.fieldErrors) {
           setFieldErrors(data.fieldErrors);
           setPhase("idle");
+        } else if (res.status === 503 && (data as { error?: string }).error === "INSUFFICIENT_RESOURCES") {
+          setFormError(t("checkout.errorResources"));
+          setPhase("failed");
         } else {
           setFormError(data.message ?? t("checkout.genericError"));
           setPhase("failed");

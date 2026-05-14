@@ -1,7 +1,11 @@
+import "dotenv/config";
 import http from "node:http";
 import { readFile, writeFile } from "node:fs/promises";
 import { PORT, DB_PATH, buildInstanceUrl, buildRedirectUrl } from "./config.mjs";
 import { provisionInstance, deprovisionInstance } from "./provisioner.mjs";
+import { checkHostResources } from "./resources.mjs";
+import { sendResourceAlert } from "./mailer.mjs";
+import { handleStripeWebhook } from "./stripe-webhook.mjs";
 
 const SLUG_RE = /^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$/;
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -124,7 +128,18 @@ const server = http.createServer(async (req, res) => {
       const slug = normalizeSlug(payload.slug);
       const email = normalizeEmail(payload.email);
       const password = String(payload.password ?? "");
-      const planId = String(payload.planId ?? "FREE");
+      const requestedPlan = String(payload.planId ?? "FREE");
+      // Plans are always provisioned as FREE; users upgrade via the billing page after creation.
+      const planId = "FREE";
+
+      const resources = await checkHostResources();
+      if (!resources.ok) {
+        sendResourceAlert({ ...resources, slug: slug || "unknown", email: email || "unknown" }).catch(() => {});
+        return sendJson(res, 503, {
+          error: "INSUFFICIENT_RESOURCES",
+          message: "Création impossible : ressources serveur insuffisantes. Veuillez réessayer plus tard.",
+        });
+      }
 
       const db = await loadDb();
       const fieldErrors = validateInstanceInput({
@@ -170,7 +185,7 @@ const server = http.createServer(async (req, res) => {
       account.deleteToken = provisionResult.deleteToken;
       await saveDb(db);
 
-      const redirectUrl = buildRedirectUrl(slug, planId);
+      const redirectUrl = buildRedirectUrl(slug, requestedPlan);
       return sendJson(res, 201, {
         url: account.url,
         redirectUrl,
@@ -217,6 +232,21 @@ const server = http.createServer(async (req, res) => {
         })
         .catch((err) => console.error(`[landing-api] Deprovisioning ${slug} failed:`, err));
       return;
+    }
+
+    // Stripe webhook — raw body required for signature verification
+    if (req.url === "/api/stripe-webhook" && req.method === "POST") {
+      const rawBody = await readBody(req);
+      const signature = req.headers["stripe-signature"];
+      if (!signature) return sendJson(res, 400, { error: "Missing stripe-signature header" });
+      try {
+        const db = await loadDb();
+        const result = await handleStripeWebhook(rawBody, signature, db, saveDb);
+        return sendJson(res, 200, result);
+      } catch (err) {
+        console.error("[stripe-webhook]", err.message);
+        return sendJson(res, err.status ?? 500, { error: err.message });
+      }
     }
 
     return sendJson(res, 404, { error: "Not found" });

@@ -1,0 +1,23 @@
+{
+  "permissions": {
+    "allow": [
+      "mcp__remote-ssh-admin__run_global_command",
+      "mcp__remote-ssh-admin__fs_write_file",
+      "mcp__remote-ssh-admin__fs_read_file",
+      "Bash(git add *)",
+      "Bash(git commit -m ' *)",
+      "Bash(git push *)",
+      "mcp__remote-ssh-admin__get_servers_list",
+      "Bash(npx tsc *)",
+      "Bash(docker compose *)",
+      "Bash(npx drizzle-kit *)",
+      "mcp__remote-ssh-admin__fs_list_directory",
+      "Bash(xargs grep *)",
+      "Bash(node -e \"JSON.parse\\(require\\('fs'\\).readFileSync\\('apps/web/src/i18n/locales/en.json','utf8'\\)\\); console.log\\('en.json OK'\\)\")",
+      "Bash(node -e \"JSON.parse\\(require\\('fs'\\).readFileSync\\('apps/web/src/i18n/locales/fr.json','utf8'\\)\\); console.log\\('fr.json OK'\\)\")",
+      "Bash(bun run *)",
+      "mcp__remote-ssh-admin__docker_list",
+      "mcp__remote-ssh-admin__docker_restart"
+    ]
+  }
+}

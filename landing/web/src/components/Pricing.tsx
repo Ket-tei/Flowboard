@@ -19,14 +19,14 @@ const plans: Plan[] = [
     nameKey: "pricing.freeName",
     priceKey: "pricing.freePrice",
     unitKey: "pricing.freeUnit",
-    features: ["pricing.freeF1", "pricing.freeF2", "pricing.freeF3"],
+    features: ["pricing.freeF1", "pricing.freeF2"],
   },
   {
     id: "PREMIUM",
     nameKey: "pricing.premiumName",
     priceKey: "pricing.premiumPrice",
     unitKey: "pricing.premiumUnit",
-    features: ["pricing.premiumF1", "pricing.premiumF2", "pricing.premiumF3"],
+    features: ["pricing.premiumF1", "pricing.premiumF2"],
     popular: true,
   },
   {
@@ -34,7 +34,7 @@ const plans: Plan[] = [
     nameKey: "pricing.proName",
     priceKey: "pricing.proPrice",
     unitKey: "pricing.proUnit",
-    features: ["pricing.proF1", "pricing.proF2", "pricing.proF3"],
+    features: ["pricing.proF1", "pricing.proF2"],
   },
 ];
 
