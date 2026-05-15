@@ -4,8 +4,8 @@ import { CreditCard, CheckCircle2, ArrowRight, Infinity as InfinityIcon, Monitor
 import { Button } from "@/components/ui/button";
 import { apiFetch } from "@/lib/api";
 
-const STRIPE_PREMIUM_LINK = "https://buy.stripe.com/4gM3cvcuv0OT3Bval2bsc00";
-const STRIPE_PRO_LINK = "https://buy.stripe.com/9B600j0LN2X16NH50Ibsc01";
+const STRIPE_PREMIUM_LINK = "https://buy.stripe.com/eVq9ATamnfJN8VP3WEbsc02";
+const STRIPE_PRO_LINK = "https://buy.stripe.com/4gM6oH3XZcxB6NHgJqbsc03";
 
 // Slug = first subdomain label, used as client_reference_id for Stripe webhook matching.
 const INSTANCE_SLUG = window.location.hostname.split(".")[0] || "default";

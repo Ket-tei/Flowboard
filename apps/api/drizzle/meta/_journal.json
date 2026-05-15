@@ -43,6 +43,13 @@
       "when": 1746604800000,
       "tag": "0005_instance_config",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "5",
+      "when": 1747699200000,
+      "tag": "0006_user_visible_tabs",
+      "breakpoints": true
     }
   ]
 }

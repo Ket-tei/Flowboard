@@ -214,8 +214,8 @@
     "usageNearLimit": "You are approaching your plan's limit. Upgrade to a higher plan to keep growing.",
     "paymentSection": "Subscription",
     "topPlan": "You are on the most complete plan.",
-    "upgradeToPremium": "Upgrade to Premium — €15/month",
-    "upgradeToPro": "Upgrade to Pro — €50/month",
+    "upgradeToPremium": "Upgrade to Premium — €35/month",
+    "upgradeToPro": "Upgrade to Pro — €60/month",
     "quotaExceeded": "Quota reached for your plan"
   },
   "help": {

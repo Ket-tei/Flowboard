@@ -214,8 +214,8 @@
     "usageNearLimit": "Vous approchez de la limite de votre plan. Passez à l'offre supérieure pour continuer à grandir.",
     "paymentSection": "Abonnement",
     "topPlan": "Vous êtes sur le plan le plus complet.",
-    "upgradeToPremium": "Passer en Premium — 15 €/mois",
-    "upgradeToPro": "Passer en Pro — 50 €/mois",
+    "upgradeToPremium": "Passer en Premium — 35 €/mois",
+    "upgradeToPro": "Passer en Pro — 60 €/mois",
     "quotaExceeded": "Quota atteint pour votre plan"
   },
   "help": {

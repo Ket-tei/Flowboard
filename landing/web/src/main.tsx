@@ -4,6 +4,12 @@ import "@fontsource-variable/geist/index.css";
 import "./index.css";
 import { I18nProvider } from "./i18n";
 import { App } from "./App";
+import posthog from "posthog-js";
+
+posthog.init(import.meta.env.VITE_POSTHOG_KEY, {
+  api_host: "https://eu.i.posthog.com",
+  person_profiles: "identified_only",
+});
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>

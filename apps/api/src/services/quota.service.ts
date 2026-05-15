@@ -5,7 +5,7 @@ import { screens, users, instanceConfig } from "../db/schema.js";
 export const PLAN_LIMITS = {
   FREE: { screens: 3, users: 1 },
   PREMIUM: { screens: 15, users: Infinity },
-  PRO: { screens: Infinity, users: Infinity },
+  PRO: { screens: 30, users: Infinity },
 } as const;
 
 export async function getInstancePlan(): Promise<"FREE" | "PREMIUM" | "PRO"> {
