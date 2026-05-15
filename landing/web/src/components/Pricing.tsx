@@ -100,19 +100,18 @@ export function Pricing() {
             ))}
 
             {/* Enterprise — full width */}
-            <div className="relative flex flex-col rounded-2xl border border-gray-900 bg-gray-900 p-8 shadow-sm transition-shadow hover:shadow-md sm:col-span-2 lg:col-span-3">
+            <div className="relative flex flex-col rounded-2xl border border-gray-200 bg-white p-8 shadow-sm transition-shadow hover:shadow-md sm:col-span-2 lg:col-span-3">
               <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
                 <div className="flex-1">
-                  <h3 className="text-lg font-semibold text-white">{t("pricing.enterpriseName")}</h3>
+                  <h3 className="text-lg font-semibold text-gray-900">{t("pricing.enterpriseName")}</h3>
                   <div className="mt-3 flex items-baseline gap-1">
-                    <span className="text-4xl font-extrabold tracking-tight text-white">
-                      {t("pricing.enterprisePrice")}
-                    </span>
+                    <span className="text-4xl font-extrabold tracking-tight text-gray-900">∞</span>
+                    <span className="text-sm text-gray-500">{t("pricing.enterpriseUnit")}</span>
                   </div>
                   <ul className="mt-6 flex flex-wrap gap-x-8 gap-y-3">
                     {["pricing.enterpriseF1", "pricing.enterpriseF2", "pricing.enterpriseF3"].map((fk) => (
-                      <li key={fk} className="flex items-center gap-2 text-sm text-gray-300">
-                        <Check className="h-4 w-4 shrink-0 text-indigo-400" />
+                      <li key={fk} className="flex items-center gap-2 text-sm text-gray-600">
+                        <Check className="h-4 w-4 shrink-0 text-indigo-500" />
                         {t(fk)}
                       </li>
                     ))}
@@ -120,7 +119,7 @@ export function Pricing() {
                 </div>
                 <a
                   href="mailto:support@canope.org"
-                  className="inline-flex shrink-0 items-center gap-2 rounded-full bg-white px-6 py-3 text-sm font-semibold text-gray-900 transition-colors hover:bg-gray-100 lg:self-center"
+                  className="inline-flex shrink-0 items-center gap-2 rounded-full bg-indigo-600 px-6 py-3 text-sm font-semibold text-white transition-colors hover:bg-indigo-700 lg:self-center"
                 >
                   <Mail className="h-4 w-4" />
                   {t("pricing.enterpriseCta")}
