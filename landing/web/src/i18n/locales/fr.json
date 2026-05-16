@@ -97,8 +97,9 @@
   },
   "footer": {
     "by": "par",
+    "legal": "Mentions légales",
     "privacy": "Politique de confidentialité",
-    "terms": "Conditions d'utilisation",
+    "terms": "CGU",
     "contact": "Contact",
     "rights": "Tous droits réservés."
   }
