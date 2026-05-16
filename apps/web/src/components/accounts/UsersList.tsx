@@ -14,14 +14,6 @@ import {
 import { cn } from "@/lib/utils";
 import type { UserRow } from "@/types/user.types";
 
-function SectionHeader({ title }: { title: string }) {
-  return (
-    <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground pb-1 pt-2">
-      {title}
-    </h3>
-  );
-}
-
 type Props = {
   users: UserRow[];
   confirmOpen: boolean;
