@@ -56,7 +56,7 @@ function ScreenItem({
           "transition-colors duration-100",
           "hover:bg-accent hover:text-accent-foreground",
           "active:bg-accent/80",
-          isSelected && "bg-primary/8 text-primary border-l-2 border-primary"
+          isSelected && "bg-accent text-accent-foreground font-medium"
         )}
         style={{ paddingLeft: 30 + depth * 16 }}
         draggable={isAdmin}

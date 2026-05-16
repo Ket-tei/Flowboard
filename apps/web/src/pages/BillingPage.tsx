@@ -135,165 +135,161 @@ export function BillingPage() {
   const usersAtLimit = limits && usage ? isNearLimit(usage.users, limits.users) : false;
 
   return (
-    <div className="space-y-6">
-      {/* Plan actuel */}
-      <div className="rounded-2xl border border-border/60 bg-card p-6">
-        <div className="flex items-center gap-3 mb-4">
-          <div className="flex size-10 items-center justify-center rounded-lg bg-primary/10">
-            <CreditCard className="size-5 text-primary" />
+    <div className="max-w-2xl">
+      <div className="border border-border/60 bg-card rounded-lg divide-y divide-border/60">
+        {/* Plan actuel */}
+        <div className="p-5">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="flex size-8 items-center justify-center rounded-lg bg-primary/10">
+              <CreditCard className="size-4 text-primary" />
+            </div>
+            <div>
+              <h2 className="text-sm font-semibold">{t("billing.title")}</h2>
+              <p className="text-xs text-muted-foreground">{t("billing.subtitle")}</p>
+            </div>
           </div>
-          <div>
-            <h2 className="text-lg font-semibold">{t("billing.title")}</h2>
-            <p className="text-sm text-muted-foreground">{t("billing.subtitle")}</p>
+          <div className="space-y-2.5">
+            <div className="flex items-center justify-between py-1">
+              <span className="text-sm text-muted-foreground">{t("billing.currentPlan")}</span>
+              <span className={`rounded px-2.5 py-0.5 text-xs font-semibold ${PLAN_BADGE_CLASS[planId]}`}>
+                {t(PLAN_LABEL_KEY[planId])}
+              </span>
+            </div>
+            <div className="flex items-center justify-between py-1">
+              <span className="text-sm text-muted-foreground">{t("billing.status")}</span>
+              <span className="flex items-center gap-1.5 text-sm font-medium text-success">
+                <CheckCircle2 className="size-3.5" />
+                {t("billing.active")}
+              </span>
+            </div>
           </div>
         </div>
 
-        <div className="rounded-lg border border-border/40 bg-muted/30 p-4 space-y-3">
-          <div className="flex items-center justify-between">
-            <span className="text-sm font-medium">{t("billing.currentPlan")}</span>
-            <span className={`rounded-full px-3 py-0.5 text-xs font-semibold ${PLAN_BADGE_CLASS[planId]}`}>
-              {t(PLAN_LABEL_KEY[planId])}
-            </span>
+        {/* Usage */}
+        {limits && usage && (
+          <div className="p-5 space-y-4">
+            <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              {t("billing.usageSection")}
+            </h3>
+            <div className="space-y-4">
+              <UsageBar
+                icon={<Monitor className="size-3.5" />}
+                label={t("billing.screensLimit")}
+                used={usage.screens}
+                limit={limits.screens}
+                formatLabel={(used, limit) =>
+                  limit === Infinity ? (
+                    <span className="flex items-center gap-1">
+                      {used} / <InfinityIcon className="size-3.5" />
+                    </span>
+                  ) : (
+                    `${used} / ${limit}`
+                  )
+                }
+              />
+              <UsageBar
+                icon={<Users className="size-3.5" />}
+                label={t("billing.usersLimit")}
+                used={usage.users}
+                limit={limits.users}
+                formatLabel={(used, limit) =>
+                  limit === Infinity ? (
+                    <span className="flex items-center gap-1">
+                      {used} / <InfinityIcon className="size-3.5" />
+                    </span>
+                  ) : (
+                    `${used} / ${limit}`
+                  )
+                }
+              />
+            </div>
+            {(screensAtLimit || usersAtLimit) && (
+              <p className="text-xs text-destructive bg-destructive/10 rounded px-3 py-2">
+                {t("billing.usageNearLimit")}
+              </p>
+            )}
           </div>
-          <div className="flex items-center justify-between">
-            <span className="text-sm text-muted-foreground">{t("billing.status")}</span>
-            <span className="flex items-center gap-1.5 text-sm font-medium text-success">
-              <CheckCircle2 className="size-3.5" />
-              {t("billing.active")}
-            </span>
-          </div>
-        </div>
-      </div>
+        )}
 
-      {/* Usage */}
-      {limits && usage && (
-        <div className="rounded-2xl border border-border/60 bg-card p-6 space-y-4">
-          <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
-            {t("billing.usageSection")}
+        {/* CTA upgrade */}
+        <div className="p-5 space-y-3">
+          <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+            {t("billing.paymentSection")}
           </h3>
-          <div className="space-y-4">
-            <UsageBar
-              icon={<Monitor className="size-3.5" />}
-              label={t("billing.screensLimit")}
-              used={usage.screens}
-              limit={limits.screens}
-              formatLabel={(used, limit) =>
-                limit === Infinity ? (
-                  <span className="flex items-center gap-1">
-                    {used} / <InfinityIcon className="size-3.5" />
-                  </span>
-                ) : (
-                  `${used} / ${limit}`
-                )
-              }
-            />
-            <UsageBar
-              icon={<Users className="size-3.5" />}
-              label={t("billing.usersLimit")}
-              used={usage.users}
-              limit={limits.users}
-              formatLabel={(used, limit) =>
-                limit === Infinity ? (
-                  <span className="flex items-center gap-1">
-                    {used} / <InfinityIcon className="size-3.5" />
-                  </span>
-                ) : (
-                  `${used} / ${limit}`
-                )
-              }
-            />
-          </div>
-          {(screensAtLimit || usersAtLimit) && (
-            <p className="text-xs text-destructive bg-destructive/10 rounded-lg px-3 py-2">
-              {t("billing.usageNearLimit")}
-            </p>
+          {planId === "PRO" || planId === "ENTERPRISE" ? (
+            <p className="text-sm text-muted-foreground">{t("billing.topPlan")}</p>
+          ) : (
+            <div className="flex flex-wrap gap-2">
+              {planId === "FREE" && (
+                <Button
+                  size="sm"
+                  className="gap-2 h-8"
+                  onClick={() => window.open(`${STRIPE_PREMIUM_LINK}?client_reference_id=${INSTANCE_SLUG}`, "_blank")}
+                >
+                  {t("billing.upgradeToPremium")}
+                  <ArrowRight className="size-3.5" />
+                </Button>
+              )}
+              <Button
+                variant={planId === "PREMIUM" ? "default" : "outline"}
+                size="sm"
+                className="gap-2 h-8"
+                onClick={() => window.open(`${STRIPE_PRO_LINK}?client_reference_id=${INSTANCE_SLUG}`, "_blank")}
+              >
+                {t("billing.upgradeToPro")}
+                <ArrowRight className="size-3.5" />
+              </Button>
+            </div>
           )}
         </div>
-      )}
 
-      {/* CTA upgrade */}
-      <div className="rounded-2xl border border-border/60 bg-card p-6 space-y-4">
-        <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
-          {t("billing.paymentSection")}
-        </h3>
-        {planId === "PRO" || planId === "ENTERPRISE" ? (
-          <p className="text-sm text-muted-foreground">{t("billing.topPlan")}</p>
-        ) : (
-          <div className="flex flex-col gap-3">
-            {planId === "FREE" && (
-              <Button
-                className="gap-2 w-fit"
-                onClick={() => window.open(`${STRIPE_PREMIUM_LINK}?client_reference_id=${INSTANCE_SLUG}`, "_blank")}
-              >
-                {t("billing.upgradeToPremium")}
-                <ArrowRight className="size-4" />
-              </Button>
+        {/* Cancel subscription — only shown for paid plans */}
+        {(planId === "PREMIUM" || planId === "PRO") && (
+          <div className="p-5 space-y-3">
+            <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              {t("billing.cancelSubscription")}
+            </h3>
+
+            {cancelState === "success" && (
+              <p className="text-sm text-success">{t("billing.cancelSuccess")}</p>
             )}
-            <Button
-              variant={planId === "PREMIUM" ? "default" : "outline"}
-              className="gap-2 w-fit"
-              onClick={() => window.open(`${STRIPE_PRO_LINK}?client_reference_id=${INSTANCE_SLUG}`, "_blank")}
-            >
-              {t("billing.upgradeToPro")}
-              <ArrowRight className="size-4" />
-            </Button>
+            {cancelState === "error" && (
+              <p className="text-sm text-destructive">{t("billing.cancelError")}</p>
+            )}
+            {cancelState !== "success" && (
+              <>
+                {cancelState === "confirm" && (
+                  <p className="text-sm text-warning-foreground bg-warning/15 rounded px-3 py-2 flex items-start gap-2">
+                    <AlertTriangle className="size-4 shrink-0 mt-0.5" />
+                    {t("billing.cancelConfirm")}
+                  </p>
+                )}
+                <div className="flex gap-2">
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    className="h-8"
+                    disabled={cancelState === "loading"}
+                    onClick={handleCancelSubscription}
+                  >
+                    {cancelState === "loading" ? t("billing.cancelling") : t("billing.cancelSubscription")}
+                  </Button>
+                  {cancelState === "confirm" && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-8"
+                      onClick={() => setCancelState("idle")}
+                    >
+                      {t("billing.cancelAbort")}
+                    </Button>
+                  )}
+                </div>
+              </>
+            )}
           </div>
         )}
       </div>
-
-      {/* Cancel subscription — only shown for paid plans */}
-      {(planId === "PREMIUM" || planId === "PRO") && (
-        <div className="rounded-2xl border border-border/60 bg-card p-6 space-y-3">
-          <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
-            {t("billing.cancelSubscription")}
-          </h3>
-
-          {cancelState === "success" && (
-            <p className="text-sm text-success">
-              {t("billing.cancelSuccess")}
-            </p>
-          )}
-          {cancelState === "error" && (
-            <p className="text-sm text-destructive">
-              {t("billing.cancelError")}
-            </p>
-          )}
-          {cancelState !== "success" && (
-            <>
-              {cancelState === "confirm" && (
-                <p className="text-sm text-warning-foreground bg-warning/15 rounded-lg px-3 py-2 flex items-start gap-2">
-                  <AlertTriangle className="size-4 shrink-0 mt-0.5" />
-                  {t("billing.cancelConfirm")}
-                </p>
-              )}
-              <div className="flex gap-2">
-                <Button
-                  variant="destructive"
-                  size="sm"
-                  className="w-fit"
-                  disabled={cancelState === "loading"}
-                  onClick={handleCancelSubscription}
-                >
-                  {cancelState === "loading"
-                    ? t("billing.cancelling")
-                    : cancelState === "confirm"
-                    ? t("billing.cancelSubscription")
-                    : t("billing.cancelSubscription")}
-                </Button>
-                {cancelState === "confirm" && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setCancelState("idle")}
-                  >
-                    {t("billing.cancelAbort")}
-                  </Button>
-                )}
-              </div>
-            </>
-          )}
-        </div>
-      )}
     </div>
   );
 }

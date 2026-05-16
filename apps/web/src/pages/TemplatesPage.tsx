@@ -139,15 +139,15 @@ export function TemplatesPage() {
 
   return (
     <div className="space-y-5">
-      {/* Header card */}
-      <div className="rounded-2xl border border-border/60 bg-card p-5">
-        <div className="flex items-center justify-between">
+      <div className="border border-border/60 bg-card rounded-lg overflow-hidden">
+        {/* Header */}
+        <div className="flex items-center justify-between px-4 py-3 border-b border-border/60">
           <div className="flex items-center gap-3">
-            <div className="flex size-10 items-center justify-center rounded-xl bg-primary/10">
-              <LayoutTemplate className="size-5 text-primary" />
+            <div className="flex size-8 items-center justify-center rounded-lg bg-primary/10">
+              <LayoutTemplate className="size-4 text-primary" />
             </div>
             <div>
-              <p className="text-base font-semibold">{t("templates.title")}</p>
+              <p className="text-sm font-semibold">{t("templates.title")}</p>
               <p className="text-xs text-muted-foreground">{t("templates.subtitle")}</p>
             </div>
           </div>
@@ -157,7 +157,7 @@ export function TemplatesPage() {
                 type="button"
                 variant="ghost"
                 size="sm"
-                className="h-8 gap-1.5 rounded-full px-3 text-xs text-muted-foreground hover:text-foreground"
+                className="h-8 gap-1.5 px-3 text-xs text-muted-foreground hover:text-foreground"
                 onClick={() => openCreateDialog("folder", null)}
                 title={t("templates.addFolder")}
               >
@@ -167,7 +167,7 @@ export function TemplatesPage() {
               <Button
                 type="button"
                 size="sm"
-                className="h-8 gap-1.5 rounded-full px-3 text-xs"
+                className="h-8 gap-1.5 px-3 text-xs"
                 onClick={() => openCreateDialog("screen", null)}
               >
                 <Plus className="size-3.5" />
@@ -176,10 +176,9 @@ export function TemplatesPage() {
             </div>
           )}
         </div>
-      </div>
 
-      {/* Tree card */}
-      <div className="rounded-2xl border border-border/60 bg-card">
+        {/* Tree */}
+        <div>
         <ContextMenu>
           <ContextMenuTrigger className="block min-h-[200px] p-2">
             {tree.tree.length === 0 ? (
@@ -230,6 +229,7 @@ export function TemplatesPage() {
             </ContextMenuContent>
           )}
         </ContextMenu>
+        </div>
       </div>
 
       {/* Create folder/template dialog */}
@@ -240,7 +240,7 @@ export function TemplatesPage() {
           if (!o) setCreateState(null);
         }}
       >
-        <DialogContent className="max-w-md overflow-hidden rounded-2xl border-border/60 p-0 sm:max-w-md">
+        <DialogContent className="max-w-md overflow-hidden rounded-lg border-border/60 p-0 sm:max-w-md">
           <DialogHeader className="border-b border-border/40 px-6 py-4">
             <DialogTitle className="text-base">
               {createState?.kind === "screen" ? t("templates.addTemplate") : t("templates.addFolder")}
@@ -291,7 +291,7 @@ export function TemplatesPage() {
               type="button"
               variant="outline"
               size="sm"
-              className="h-9 rounded-full px-4"
+              className="h-9 px-4"
               onClick={() => setCreateOpen(false)}
               disabled={createState?.busy === true}
             >
@@ -300,7 +300,7 @@ export function TemplatesPage() {
             <Button
               type="button"
               size="sm"
-              className="h-9 rounded-full px-4"
+              className="h-9 px-4"
               onClick={() => void submitCreate()}
               disabled={
                 createState?.busy === true ||
@@ -316,7 +316,7 @@ export function TemplatesPage() {
 
       {/* Delete confirm */}
       <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
-        <AlertDialogContent className="rounded-2xl border-border/60">
+        <AlertDialogContent className="rounded-lg border-border/60">
           <AlertDialogHeader>
             <AlertDialogTitle>{t("screens.confirmDeleteTitle")}</AlertDialogTitle>
             <AlertDialogDescription>
@@ -326,9 +326,9 @@ export function TemplatesPage() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel className="rounded-full">{t("common.cancel")}</AlertDialogCancel>
+            <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
             <AlertDialogAction
-              className="rounded-full bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
               onClick={() => void confirmDelete()}
             >
               {t("common.delete")}
