@@ -50,9 +50,6 @@ export function Footer() {
           </nav>
         </div>
 
-        <p className="mt-6 text-center text-xs text-gray-300">
-          © {new Date().getFullYear()} Canope. {t("footer.rights")}
-        </p>
       </div>
     </footer>
   );
