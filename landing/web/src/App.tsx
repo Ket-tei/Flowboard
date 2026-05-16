@@ -11,9 +11,15 @@ import { DemoSlideshow } from "./demos/DemoSlideshow";
 import { DemoAccounts } from "./demos/DemoAccounts";
 import { useTranslation } from "react-i18next";
 import { MEDIA_POOL, INITIAL_MEDIA_IDS, type DemoMediaItem } from "./demos/demo-data";
+import { TermsPage, PrivacyPage } from "./pages/LegalPage";
 
 export function App() {
   const { t } = useTranslation();
+
+  const path = window.location.pathname;
+  if (path === "/terms") return <TermsPage />;
+  if (path === "/privacy") return <PrivacyPage />;
+
 
   const [loginOpen, setLoginOpen] = useState(false);
   const [mediaItems, setMediaItems] = useState<DemoMediaItem[]>(

@@ -96,6 +96,10 @@
     "genericError": "Login failed. Please try again."
   },
   "footer": {
-  
+    "by": "by",
+    "privacy": "Privacy Policy",
+    "terms": "Terms of Service",
+    "contact": "Contact",
+    "rights": "All rights reserved."
   }
 }

@@ -95,5 +95,11 @@
     "notFound": "Aucune instance associée à cet email.",
     "genericError": "Erreur lors de la connexion. Réessayez."
   },
-  "footer": {}
+  "footer": {
+    "by": "par",
+    "privacy": "Politique de confidentialité",
+    "terms": "Conditions d'utilisation",
+    "contact": "Contact",
+    "rights": "Tous droits réservés."
+  }
 }
