@@ -67,7 +67,7 @@ export function UsersList({ users, confirmOpen, confirmUser, onEdit, onRequestDe
                       className={cn(
                         "inline-flex shrink-0 items-center gap-1 rounded-full px-2.5 py-0.5 text-[10px] font-semibold leading-none",
                         u.role === "ADMIN"
-                          ? "bg-blue-700 text-white"
+                          ? "bg-primary text-primary-foreground"
                           : "bg-muted text-muted-foreground"
                       )}
                     >

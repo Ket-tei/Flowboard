@@ -11,7 +11,7 @@ function SkeletonGrid() {
       {Array.from({ length: 6 }).map((_, i) => (
         <div
           key={i}
-          className="rounded-xl border border-border/60 bg-card min-h-[160px] animate-pulse"
+          className="rounded-2xl border border-border/60 bg-card min-h-[160px] animate-pulse"
         >
           <div className="px-4 pt-3 pb-2">
             <div className="h-3 w-24 rounded bg-muted" />
@@ -47,7 +47,7 @@ export function DashboardPage() {
   return (
     <div className="space-y-5">
       {/* Header */}
-      <div className="rounded-xl border border-border/60 bg-card p-5">
+      <div className="rounded-2xl border border-border/60 bg-card p-5 glow-bg-soft shadow-card-soft">
         <div className="flex items-center justify-between gap-4">
           <div className="flex items-center gap-3 min-w-0">
             <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary/10">

@@ -36,25 +36,25 @@ const PLAN_LABEL_KEY: Record<PlanId, string> = {
 };
 
 const PLAN_BADGE_CLASS: Record<PlanId, string> = {
-  FREE: "bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300",
-  PREMIUM: "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300",
-  PRO: "bg-violet-100 text-violet-700 dark:bg-violet-900/40 dark:text-violet-300",
-  ENTERPRISE: "bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300",
+  FREE: "bg-tier-free text-tier-free-foreground",
+  PREMIUM: "bg-tier-premium text-tier-premium-foreground",
+  PRO: "bg-tier-pro text-tier-pro-foreground",
+  ENTERPRISE: "bg-tier-enterprise text-tier-enterprise-foreground",
 };
 
 function usageColor(used: number, limit: number): string {
-  if (limit === Infinity) return "bg-emerald-500";
+  if (limit === Infinity) return "bg-success";
   const ratio = used / limit;
-  if (ratio >= 0.9) return "bg-red-500";
-  if (ratio >= 0.7) return "bg-amber-500";
-  return "bg-emerald-500";
+  if (ratio >= 0.9) return "bg-destructive";
+  if (ratio >= 0.7) return "bg-warning";
+  return "bg-success";
 }
 
 function usageTextColor(used: number, limit: number): string {
   if (limit === Infinity) return "";
   const ratio = used / limit;
-  if (ratio >= 0.9) return "text-red-600 dark:text-red-400";
-  if (ratio >= 0.7) return "text-amber-600 dark:text-amber-400";
+  if (ratio >= 0.9) return "text-destructive";
+  if (ratio >= 0.7) return "text-warning";
   return "";
 }
 
@@ -87,8 +87,8 @@ function UsageBar({ icon, label, used, limit, formatLabel }: UsageBarProps) {
       </div>
       <div className="h-2 w-full rounded-full bg-muted overflow-hidden">
         {limit === Infinity ? (
-          <div className="h-full w-full bg-emerald-500/30 flex items-center justify-center">
-            <div className="h-full w-8 bg-emerald-500 rounded-full" />
+          <div className="h-full w-full bg-success/30 flex items-center justify-center">
+            <div className="h-full w-8 bg-success rounded-full" />
           </div>
         ) : (
           <div
@@ -137,10 +137,10 @@ export function BillingPage() {
   return (
     <div className="space-y-6">
       {/* Plan actuel */}
-      <div className="rounded-xl border border-border/60 bg-card p-6">
+      <div className="rounded-2xl border border-border/60 bg-card p-6">
         <div className="flex items-center gap-3 mb-4">
-          <div className="flex size-10 items-center justify-center rounded-lg bg-blue-100 dark:bg-blue-900/30">
-            <CreditCard className="size-5 text-blue-700 dark:text-blue-400" />
+          <div className="flex size-10 items-center justify-center rounded-lg bg-primary/10">
+            <CreditCard className="size-5 text-primary" />
           </div>
           <div>
             <h2 className="text-lg font-semibold">{t("billing.title")}</h2>
@@ -157,7 +157,7 @@ export function BillingPage() {
           </div>
           <div className="flex items-center justify-between">
             <span className="text-sm text-muted-foreground">{t("billing.status")}</span>
-            <span className="flex items-center gap-1.5 text-sm font-medium text-emerald-600 dark:text-emerald-400">
+            <span className="flex items-center gap-1.5 text-sm font-medium text-success">
               <CheckCircle2 className="size-3.5" />
               {t("billing.active")}
             </span>
@@ -167,7 +167,7 @@ export function BillingPage() {
 
       {/* Usage */}
       {limits && usage && (
-        <div className="rounded-xl border border-border/60 bg-card p-6 space-y-4">
+        <div className="rounded-2xl border border-border/60 bg-card p-6 space-y-4">
           <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
             {t("billing.usageSection")}
           </h3>
@@ -204,7 +204,7 @@ export function BillingPage() {
             />
           </div>
           {(screensAtLimit || usersAtLimit) && (
-            <p className="text-xs text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/30 rounded-lg px-3 py-2">
+            <p className="text-xs text-destructive bg-destructive/10 rounded-lg px-3 py-2">
               {t("billing.usageNearLimit")}
             </p>
           )}
@@ -212,7 +212,7 @@ export function BillingPage() {
       )}
 
       {/* CTA upgrade */}
-      <div className="rounded-xl border border-border/60 bg-card p-6 space-y-4">
+      <div className="rounded-2xl border border-border/60 bg-card p-6 space-y-4">
         <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
           {t("billing.paymentSection")}
         </h3>
@@ -243,25 +243,25 @@ export function BillingPage() {
 
       {/* Cancel subscription — only shown for paid plans */}
       {(planId === "PREMIUM" || planId === "PRO") && (
-        <div className="rounded-xl border border-border/60 bg-card p-6 space-y-3">
+        <div className="rounded-2xl border border-border/60 bg-card p-6 space-y-3">
           <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
             {t("billing.cancelSubscription")}
           </h3>
 
           {cancelState === "success" && (
-            <p className="text-sm text-emerald-600 dark:text-emerald-400">
+            <p className="text-sm text-success">
               {t("billing.cancelSuccess")}
             </p>
           )}
           {cancelState === "error" && (
-            <p className="text-sm text-red-600 dark:text-red-400">
+            <p className="text-sm text-destructive">
               {t("billing.cancelError")}
             </p>
           )}
           {cancelState !== "success" && (
             <>
               {cancelState === "confirm" && (
-                <p className="text-sm text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/30 rounded-lg px-3 py-2 flex items-start gap-2">
+                <p className="text-sm text-warning-foreground bg-warning/15 rounded-lg px-3 py-2 flex items-start gap-2">
                   <AlertTriangle className="size-4 shrink-0 mt-0.5" />
                   {t("billing.cancelConfirm")}
                 </p>

@@ -25,7 +25,7 @@ export default function RecentAccountsWidget({ data }: { data: any }) {
           >
             <div
               className={`flex size-8 shrink-0 items-center justify-center rounded-full text-xs font-bold text-white ${
-                isAdmin ? "bg-blue-700" : "bg-emerald-500"
+                isAdmin ? "bg-primary" : "bg-success"
               }`}
             >
               {initial}

@@ -132,7 +132,7 @@ export function TemplateEditorPage() {
             <>
               <span className="text-muted-foreground/40">·</span>
               <span className="flex items-center gap-1">
-                <span className="size-1.5 rounded-full bg-amber-500/80 inline-block" />
+                <span className="size-1.5 rounded-full bg-warning/80 inline-block" />
                 {t("templateEditor.unsavedIndicator")}
               </span>
             </>

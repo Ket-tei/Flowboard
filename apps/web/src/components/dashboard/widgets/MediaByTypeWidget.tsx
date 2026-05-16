@@ -23,9 +23,9 @@ export default function MediaByTypeWidget({ data }: { data: any }) {
 
   return (
     <div className="flex flex-col justify-center gap-3 h-full px-1">
-      <Bar label={t("dashboard.widgets.images")} value={mediaByType.IMAGE} max={max} color="bg-blue-600" />
-      <Bar label={t("dashboard.widgets.videos")} value={mediaByType.VIDEO} max={max} color="bg-violet-500" />
-      <Bar label={t("dashboard.widgets.gifs")} value={mediaByType.GIF} max={max} color="bg-amber-500" />
+      <Bar label={t("dashboard.widgets.images")} value={mediaByType.IMAGE} max={max} color="bg-chart-1" />
+      <Bar label={t("dashboard.widgets.videos")} value={mediaByType.VIDEO} max={max} color="bg-chart-5" />
+      <Bar label={t("dashboard.widgets.gifs")} value={mediaByType.GIF} max={max} color="bg-warning" />
     </div>
   );
 }

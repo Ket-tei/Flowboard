@@ -66,7 +66,7 @@ function NavItems({
             cn(
               "flex items-center gap-3 rounded-lg px-3 py-2 text-[13px] font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-border",
               isActive
-                ? "bg-muted text-foreground"
+                ? "bg-accent text-accent-foreground"
                 : "text-foreground/90 hover:bg-muted/60"
             )
           }

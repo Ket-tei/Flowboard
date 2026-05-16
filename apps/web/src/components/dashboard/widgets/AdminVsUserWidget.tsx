@@ -13,25 +13,25 @@ export default function AdminVsUserWidget({ data }: { data: any }) {
       <div className="flex h-4 w-full rounded-full overflow-hidden bg-muted/60">
         {adminPct > 0 && (
           <div
-            className="h-full bg-blue-700 transition-all duration-500"
+            className="h-full bg-primary transition-all duration-500"
             style={{ width: `${adminPct}%` }}
           />
         )}
         {userPct > 0 && (
           <div
-            className="h-full bg-emerald-500 transition-all duration-500"
+            className="h-full bg-success transition-all duration-500"
             style={{ width: `${userPct}%` }}
           />
         )}
       </div>
       <div className="flex justify-between text-xs">
         <div className="flex items-center gap-2">
-          <span className="size-2.5 rounded-full bg-blue-700" />
+          <span className="size-2.5 rounded-full bg-primary" />
           <span className="text-muted-foreground">{t("dashboard.widgets.admins")}</span>
           <span className="font-semibold">{admins}</span>
         </div>
         <div className="flex items-center gap-2">
-          <span className="size-2.5 rounded-full bg-emerald-500" />
+          <span className="size-2.5 rounded-full bg-success" />
           <span className="text-muted-foreground">{t("dashboard.widgets.users")}</span>
           <span className="font-semibold">{users}</span>
         </div>

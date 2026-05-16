@@ -37,12 +37,12 @@ export function LoginPage() {
   }
 
   return (
-    <div className="flex min-h-svh items-center justify-center bg-muted/40 p-6">
-      <Card className="border-border/80 w-full max-w-md rounded-lg shadow-md">
+    <div className="flex min-h-svh items-center justify-center bg-background glow-bg p-6">
+      <Card className="border-border w-full max-w-md rounded-2xl shadow-card-soft">
         <CardContent className="p-8 pt-8">
           <div className="mb-6 flex items-center gap-3">
             <img src={logoSrc} alt={t("app.name")} className="h-10 w-auto" />
-            <h1 className="text-foreground text-2xl font-bold">
+            <h1 className="text-foreground text-2xl font-extrabold tracking-tight">
               {t("login.title")}
               <span className="text-primary"> {t("app.name")}</span>
             </h1>
