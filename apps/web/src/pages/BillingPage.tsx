@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { CreditCard, CheckCircle2, ArrowRight, Infinity as InfinityIcon, Monitor, Users } from "lucide-react";
+import { CreditCard, CheckCircle2, ArrowRight, Infinity as InfinityIcon, Monitor, Users, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { apiFetch } from "@/lib/api";
 
@@ -10,7 +10,7 @@ const STRIPE_PRO_LINK = "https://buy.stripe.com/4gM6oH3XZcxB6NHgJqbsc03";
 // Slug = first subdomain label, used as client_reference_id for Stripe webhook matching.
 const INSTANCE_SLUG = window.location.hostname.split(".")[0] || "default";
 
-type PlanId = "FREE" | "PREMIUM" | "PRO";
+type PlanId = "FREE" | "PREMIUM" | "PRO" | "ENTERPRISE";
 
 interface PlanLimits {
   screens: number;
@@ -32,12 +32,14 @@ const PLAN_LABEL_KEY: Record<PlanId, string> = {
   FREE: "billing.planFree",
   PREMIUM: "billing.planPremium",
   PRO: "billing.planPro",
+  ENTERPRISE: "billing.planEnterprise",
 };
 
 const PLAN_BADGE_CLASS: Record<PlanId, string> = {
   FREE: "bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300",
   PREMIUM: "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300",
   PRO: "bg-violet-100 text-violet-700 dark:bg-violet-900/40 dark:text-violet-300",
+  ENTERPRISE: "bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300",
 };
 
 function usageColor(used: number, limit: number): string {
@@ -102,12 +104,28 @@ function UsageBar({ icon, label, used, limit, formatLabel }: UsageBarProps) {
 export function BillingPage() {
   const { t } = useTranslation();
   const [plan, setPlan] = useState<PlanInfo | null>(null);
+  const [cancelState, setCancelState] = useState<"idle" | "confirm" | "loading" | "success" | "error">("idle");
 
   useEffect(() => {
     apiFetch<PlanInfo>("/api/instance/plan")
       .then(setPlan)
       .catch(() => {});
   }, []);
+
+  async function handleCancelSubscription() {
+    if (cancelState === "confirm") {
+      setCancelState("loading");
+      try {
+        await apiFetch("/api/instance/cancel-subscription", { method: "POST" });
+        setCancelState("success");
+        setPlan((prev) => prev ? { ...prev, planId: "FREE" } : prev);
+      } catch {
+        setCancelState("error");
+      }
+    } else {
+      setCancelState("confirm");
+    }
+  }
 
   const planId = plan?.planId ?? "FREE";
   const limits = plan?.limits;
@@ -198,7 +216,7 @@ export function BillingPage() {
         <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
           {t("billing.paymentSection")}
         </h3>
-        {planId === "PRO" ? (
+        {planId === "PRO" || planId === "ENTERPRISE" ? (
           <p className="text-sm text-muted-foreground">{t("billing.topPlan")}</p>
         ) : (
           <div className="flex flex-col gap-3">
@@ -222,6 +240,60 @@ export function BillingPage() {
           </div>
         )}
       </div>
+
+      {/* Cancel subscription — only shown for paid plans */}
+      {(planId === "PREMIUM" || planId === "PRO") && (
+        <div className="rounded-xl border border-border/60 bg-card p-6 space-y-3">
+          <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+            {t("billing.cancelSubscription")}
+          </h3>
+
+          {cancelState === "success" && (
+            <p className="text-sm text-emerald-600 dark:text-emerald-400">
+              {t("billing.cancelSuccess")}
+            </p>
+          )}
+          {cancelState === "error" && (
+            <p className="text-sm text-red-600 dark:text-red-400">
+              {t("billing.cancelError")}
+            </p>
+          )}
+          {cancelState !== "success" && (
+            <>
+              {cancelState === "confirm" && (
+                <p className="text-sm text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/30 rounded-lg px-3 py-2 flex items-start gap-2">
+                  <AlertTriangle className="size-4 shrink-0 mt-0.5" />
+                  {t("billing.cancelConfirm")}
+                </p>
+              )}
+              <div className="flex gap-2">
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  className="w-fit"
+                  disabled={cancelState === "loading"}
+                  onClick={handleCancelSubscription}
+                >
+                  {cancelState === "loading"
+                    ? t("billing.cancelling")
+                    : cancelState === "confirm"
+                    ? t("billing.cancelSubscription")
+                    : t("billing.cancelSubscription")}
+                </Button>
+                {cancelState === "confirm" && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setCancelState("idle")}
+                  >
+                    {t("billing.cancelAbort")}
+                  </Button>
+                )}
+              </div>
+            </>
+          )}
+        </div>
+      )}
     </div>
   );
 }

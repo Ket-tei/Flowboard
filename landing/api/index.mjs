@@ -6,6 +6,7 @@ import { provisionInstance, deprovisionInstance } from "./provisioner.mjs";
 import { checkHostResources } from "./resources.mjs";
 import { sendResourceAlert } from "./mailer.mjs";
 import { handleStripeWebhook } from "./stripe-webhook.mjs";
+import Stripe from "stripe";
 
 const SLUG_RE = /^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$/;
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -232,6 +233,59 @@ const server = http.createServer(async (req, res) => {
         })
         .catch((err) => console.error(`[landing-api] Deprovisioning ${slug} failed:`, err));
       return;
+    }
+
+    // Cancel Stripe subscription — authenticated with deleteToken
+    if (req.url?.match(/^\/api\/instances\/[^/]+\/cancel-subscription$/) && req.method === "POST") {
+      const slug = req.url.split("/")[3];
+      const token = req.headers.authorization?.replace(/^Bearer\s+/i, "");
+
+      const db = await loadDb();
+      const account = db.accounts.find((a) => a.slug === slug);
+      if (!account) return sendJson(res, 404, { error: "Not found" });
+      if (!token || !account.deleteToken || token !== account.deleteToken) {
+        return sendJson(res, 403, { error: "Forbidden" });
+      }
+
+      const stripeKey = process.env.STRIPE_SECRET_KEY;
+      if (!stripeKey) return sendJson(res, 500, { error: "Stripe not configured" });
+
+      if (!account.stripeSubscriptionId) {
+        return sendJson(res, 400, { error: "No active subscription found" });
+      }
+
+      const stripe = new Stripe(stripeKey);
+      try {
+        await stripe.subscriptions.cancel(account.stripeSubscriptionId);
+      } catch (err) {
+        console.error("[cancel-subscription] Stripe error:", err.message);
+        return sendJson(res, 500, { error: `Stripe error: ${err.message}` });
+      }
+
+      // Reset plan to FREE on the instance
+      try {
+        const res2 = await fetch(`${account.url}/api/instance/plan`, {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${account.deleteToken}`,
+          },
+          body: JSON.stringify({ planId: "FREE" }),
+        });
+        if (!res2.ok) {
+          const body = await res2.json().catch(() => ({}));
+          console.error("[cancel-subscription] Plan reset failed:", body.error);
+        }
+      } catch (err) {
+        console.error("[cancel-subscription] Plan reset error:", err.message);
+      }
+
+      account.planId = "FREE";
+      account.stripeSubscriptionId = null;
+      await saveDb(db);
+
+      console.log(`[cancel-subscription] Subscription cancelled: ${slug}`);
+      return sendJson(res, 200, { ok: true, planId: "FREE" });
     }
 
     // Stripe webhook — raw body required for signature verification

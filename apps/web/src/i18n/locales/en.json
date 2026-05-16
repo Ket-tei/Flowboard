@@ -205,6 +205,7 @@
     "planFree": "Free",
     "planPremium": "Premium",
     "planPro": "Pro",
+    "planEnterprise": "Enterprise",
     "status": "Status",
     "active": "Active",
     "usageSection": "Your usage",
@@ -216,7 +217,13 @@
     "topPlan": "You are on the most complete plan.",
     "upgradeToPremium": "Upgrade to Premium — €35/month",
     "upgradeToPro": "Upgrade to Pro — €60/month",
-    "quotaExceeded": "Quota reached for your plan"
+    "quotaExceeded": "Quota reached for your plan",
+    "cancelSubscription": "Cancel subscription",
+    "cancelConfirm": "Are you sure you want to cancel your subscription? Your plan will revert to Free immediately.",
+    "cancelSuccess": "Your subscription has been cancelled. You are now on the Free plan.",
+    "cancelError": "Failed to cancel the subscription. Please contact support.",
+    "cancelling": "Cancelling…",
+    "cancelAbort": "Keep subscription"
   },
   "help": {
     "subtitle": "Documentation and tutorials.",

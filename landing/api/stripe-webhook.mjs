@@ -73,8 +73,10 @@ export async function handleStripeWebhook(rawBody, signature, db, saveDb) {
     throw new Error(`Instance plan update failed (${res.status}): ${body.error ?? "unknown"}`);
   }
 
-  // Mirror the change in db.json
+  // Mirror the change in db.json (save subscription + customer IDs for future cancellation)
   account.planId = planId;
+  if (session.subscription) account.stripeSubscriptionId = session.subscription;
+  if (session.customer) account.stripeCustomerId = session.customer;
   await saveDb(db);
 
   console.log(`[stripe-webhook] Plan updated: ${slug} → ${planId}`);
