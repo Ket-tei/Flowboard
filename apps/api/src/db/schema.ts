@@ -150,7 +150,8 @@ export const userTemplateAccess = mysqlTable(
 
 export const instanceConfig = mysqlTable("instance_config", {
   id: int("id").primaryKey().default(1),
-  planId: mysqlEnum("plan_id", ["FREE", "PREMIUM", "PRO"]).notNull().default("FREE"),
+  planId: mysqlEnum("plan_id", ["FREE", "PREMIUM", "PRO", "ENTERPRISE"]).notNull().default("FREE"),
+  customScreenLimit: int("custom_screen_limit"),
 });
 
 export const screenSchedules = mysqlTable("screen_schedules", {

@@ -1,7 +1,7 @@
 import type { FastifyInstance } from "fastify";
 import { eq } from "drizzle-orm";
 import { adminPreHandler } from "../plugins/require-auth.js";
-import { getInstancePlan, PLAN_LIMITS, getInstanceUsage } from "../services/quota.service.js";
+import { getInstancePlanInfo, getPlanLimits, getInstanceUsage } from "../services/quota.service.js";
 import { db } from "../db/index.js";
 import { instanceConfig } from "../db/schema.js";
 
@@ -9,12 +9,14 @@ const LANDING_API_URL = process.env.LANDING_API_URL ?? "";
 const INSTANCE_SLUG = process.env.INSTANCE_SLUG ?? "";
 const INSTANCE_DELETE_TOKEN = process.env.INSTANCE_DELETE_TOKEN ?? "";
 
+const VALID_PLANS = ["FREE", "PREMIUM", "PRO", "ENTERPRISE"] as const;
+
 export async function registerInstanceRoutes(app: FastifyInstance) {
   app.get("/instance/plan", { preHandler: adminPreHandler }, async () => {
-    const planId = await getInstancePlan();
-    const limits = PLAN_LIMITS[planId];
+    const info = await getInstancePlanInfo();
+    const limits = await getPlanLimits(info);
     const usage = await getInstanceUsage();
-    return { planId, limits, usage };
+    return { planId: info.planId, limits, usage };
   });
 
   // Internal endpoint called by the landing API after a successful Stripe payment.
@@ -24,14 +26,20 @@ export async function registerInstanceRoutes(app: FastifyInstance) {
     if (!INSTANCE_DELETE_TOKEN || token !== INSTANCE_DELETE_TOKEN) {
       return reply.status(401).send({ error: "Unauthorized" });
     }
-    const body = request.body as { planId?: string };
+    const body = request.body as { planId?: string; customScreenLimit?: number };
     const planId = body?.planId;
-    if (!planId || !["FREE", "PREMIUM", "PRO"].includes(planId)) {
+    if (!planId || !(VALID_PLANS as readonly string[]).includes(planId)) {
       return reply.status(400).send({ error: "Invalid planId" });
+    }
+    if (planId === "ENTERPRISE" && (body.customScreenLimit == null || body.customScreenLimit < 1)) {
+      return reply.status(400).send({ error: "customScreenLimit required for ENTERPRISE plan" });
     }
     await db
       .update(instanceConfig)
-      .set({ planId: planId as "FREE" | "PREMIUM" | "PRO" })
+      .set({
+        planId: planId as typeof VALID_PLANS[number],
+        customScreenLimit: planId === "ENTERPRISE" ? (body.customScreenLimit ?? null) : null,
+      })
       .where(eq(instanceConfig.id, 1));
     return { ok: true, planId };
   });
