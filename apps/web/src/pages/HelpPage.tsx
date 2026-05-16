@@ -8,10 +8,9 @@ export function HelpPage() {
   const { startTutorial } = useTutorial();
 
   return (
-    <div className="max-w-2xl">
-      <div className="border border-border/60 bg-card rounded-lg divide-y divide-border/60">
-        {/* About */}
-        <div className="p-5">
+    <div>
+      {/* About */}
+      <div className="py-4 border-b border-border/60">
           <div className="flex items-center gap-3 mb-3">
             <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-primary/10">
               <BookOpen className="size-4 text-primary" />
@@ -21,8 +20,8 @@ export function HelpPage() {
           <p className="text-sm text-muted-foreground leading-relaxed">{t("help.aboutDesc")}</p>
         </div>
 
-        {/* Links */}
-        <div className="p-5">
+      {/* Links */}
+      <div className="py-4 border-b border-border/60">
           <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">
             {t("help.linksTitle")}
           </h2>
@@ -58,8 +57,8 @@ export function HelpPage() {
           </div>
         </div>
 
-        {/* Tutorial */}
-        <div className="p-5">
+      {/* Tutorial */}
+      <div className="py-4">
           <div className="flex items-start gap-4">
             <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-primary/10">
               <PlayCircle className="size-4 text-primary" />
@@ -81,7 +80,6 @@ export function HelpPage() {
             </div>
           </div>
         </div>
-      </div>
     </div>
   );
 }

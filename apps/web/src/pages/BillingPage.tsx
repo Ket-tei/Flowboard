@@ -135,10 +135,9 @@ export function BillingPage() {
   const usersAtLimit = limits && usage ? isNearLimit(usage.users, limits.users) : false;
 
   return (
-    <div className="max-w-2xl">
-      <div className="border border-border/60 bg-card rounded-lg divide-y divide-border/60">
-        {/* Plan actuel */}
-        <div className="p-5">
+    <div>
+      {/* Plan actuel */}
+      <div className="py-4 border-b border-border/60">
           <div className="flex items-center gap-3 mb-4">
             <div className="flex size-8 items-center justify-center rounded-lg bg-primary/10">
               <CreditCard className="size-4 text-primary" />
@@ -165,9 +164,9 @@ export function BillingPage() {
           </div>
         </div>
 
-        {/* Usage */}
-        {limits && usage && (
-          <div className="p-5 space-y-4">
+      {/* Usage */}
+      {limits && usage && (
+        <div className="py-4 border-b border-border/60 space-y-4">
             <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
               {t("billing.usageSection")}
             </h3>
@@ -211,8 +210,8 @@ export function BillingPage() {
           </div>
         )}
 
-        {/* CTA upgrade */}
-        <div className="p-5 space-y-3">
+      {/* CTA upgrade */}
+      <div className="py-4 border-b border-border/60 space-y-3">
           <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
             {t("billing.paymentSection")}
           </h3>
@@ -243,9 +242,9 @@ export function BillingPage() {
           )}
         </div>
 
-        {/* Cancel subscription — only shown for paid plans */}
-        {(planId === "PREMIUM" || planId === "PRO") && (
-          <div className="p-5 space-y-3">
+      {/* Cancel subscription — only shown for paid plans */}
+      {(planId === "PREMIUM" || planId === "PRO") && (
+        <div className="py-4 space-y-3">
             <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
               {t("billing.cancelSubscription")}
             </h3>
@@ -289,7 +288,6 @@ export function BillingPage() {
             )}
           </div>
         )}
-      </div>
     </div>
   );
 }

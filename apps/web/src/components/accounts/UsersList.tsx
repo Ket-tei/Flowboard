@@ -38,12 +38,8 @@ export function UsersList({ users, confirmOpen, confirmUser, onEdit, onRequestDe
 
   return (
     <>
-      <div className="rounded-2xl border border-border/60 bg-card">
-        <div className="px-5 pt-4 pb-1">
-          <SectionHeader title={t("accounts.members")} />
-        </div>
-        <div className="px-5 pb-3 divide-y divide-border/40">
-          {users.length === 0 ? (
+      <div className="divide-y divide-border/40">
+        {users.length === 0 ? (
             <p className="py-8 text-center text-sm text-muted-foreground">
               {t("accounts.noAccounts")}
             </p>
@@ -108,8 +104,7 @@ export function UsersList({ users, confirmOpen, confirmUser, onEdit, onRequestDe
                 </div>
               </div>
             ))
-          )}
-        </div>
+        )}
       </div>
 
       <AlertDialog open={confirmOpen} onOpenChange={(open) => { if (!open) onCancelDelete(); }}>
@@ -121,11 +116,11 @@ export function UsersList({ users, confirmOpen, confirmUser, onEdit, onRequestDe
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel className="rounded-full" onClick={onCancelDelete}>
+            <AlertDialogCancel onClick={onCancelDelete}>
               {t("common.cancel")}
             </AlertDialogCancel>
             <AlertDialogAction
-              className="rounded-full bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
               onClick={onConfirmDelete}
             >
               {t("common.delete")}

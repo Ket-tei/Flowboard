@@ -27,30 +27,28 @@ export function AccountsPage() {
   }
 
   return (
-    <div className="space-y-5">
-      <div className="rounded-2xl border border-border/60 bg-card p-5">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="flex size-10 items-center justify-center rounded-xl bg-primary/10">
-              <Users className="size-5 text-primary" />
-            </div>
-            <div>
-              <p className="text-base font-semibold">{t("accounts.members")}</p>
-              <p className="text-xs text-muted-foreground">
-                {t("accounts.membersCount", { count: mgr.users.length })}
-              </p>
-            </div>
+    <div>
+      <div className="flex items-center justify-between py-2.5 border-b border-border/60 mb-0">
+        <div className="flex items-center gap-2.5">
+          <div className="flex size-8 items-center justify-center rounded-lg bg-primary/10">
+            <Users className="size-4 text-primary" />
           </div>
-          <Button
-            type="button"
-            size="sm"
-            className="h-9 gap-1.5 rounded-full px-4 text-xs"
-            onClick={mgr.openCreate}
-          >
-            <Plus className="size-3.5" />
-            {t("accounts.add")}
-          </Button>
+          <div>
+            <p className="text-sm font-semibold">{t("accounts.members")}</p>
+            <p className="text-xs text-muted-foreground">
+              {t("accounts.membersCount", { count: mgr.users.length })}
+            </p>
+          </div>
         </div>
+        <Button
+          type="button"
+          size="sm"
+          className="h-8 gap-1.5 px-3 text-xs"
+          onClick={mgr.openCreate}
+        >
+          <Plus className="size-3.5" />
+          {t("accounts.add")}
+        </Button>
       </div>
 
       <UsersList

@@ -63,9 +63,9 @@ function SettingRow({
   );
 }
 
-function SectionHeader({ title }: { title: string }) {
+function SectionHeader({ title, variant }: { title: string; variant?: "destructive" }) {
   return (
-    <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground pb-1 pt-2">
+    <h3 className={cn("text-xs font-semibold uppercase tracking-wider pb-1 pt-3", variant === "destructive" ? "text-destructive" : "text-muted-foreground")}>
       {title}
     </h3>
   );
@@ -106,29 +106,24 @@ export function SettingsPage() {
   const initial = (user?.username ?? "?")[0].toUpperCase();
 
   return (
-    <div className="space-y-6">
-      {/* Profile card */}
-      <div className="rounded-xl border border-border/60 bg-card p-5">
-        <div className="flex items-center gap-4">
-          <div className="flex size-12 items-center justify-center rounded-full bg-primary text-primary-foreground text-lg font-bold">
-            {initial}
-          </div>
-          <div className="min-w-0 flex-1">
-            <p className="text-base font-semibold truncate">{user?.username}</p>
-            <p className="text-sm text-muted-foreground">
-              {user?.role === "ADMIN" ? t("accounts.admin") : t("accounts.user")}
-            </p>
-          </div>
+    <div>
+      {/* Profile */}
+      <div className="flex items-center gap-3 py-4 border-b border-border/60">
+        <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground text-base font-bold">
+          {initial}
+        </div>
+        <div className="min-w-0 flex-1">
+          <p className="text-sm font-semibold truncate">{user?.username}</p>
+          <p className="text-xs text-muted-foreground">
+            {user?.role === "ADMIN" ? t("accounts.admin") : t("accounts.user")}
+          </p>
         </div>
       </div>
 
       {/* Preferences */}
-      <div className="rounded-xl border border-border/60 bg-card">
-        <div className="px-5 pt-4 pb-1">
-          <SectionHeader title={t("settings.preferences")} />
-        </div>
-
-        <div className="px-5 divide-y divide-border/40">
+      <div className="border-b border-border/60">
+        <SectionHeader title={t("settings.preferences")} />
+        <div className="divide-y divide-border/40">
           <SettingRow
             icon={Globe}
             label={t("settings.language")}
@@ -190,12 +185,9 @@ export function SettingsPage() {
       </div>
 
       {/* Danger zone */}
-      <div className="rounded-xl border border-destructive/30 bg-card">
-        <div className="px-5 pt-4 pb-1">
-          <SectionHeader title={t("settings.dangerZone")} />
-        </div>
-
-        <div className="px-5 pb-2 divide-y divide-border/40">
+      <div>
+        <SectionHeader title={t("settings.dangerZone")} variant="destructive" />
+        <div className="divide-y divide-border/40 pb-2">
           <SettingRow
             icon={LogOut}
             label={t("settings.logout")}

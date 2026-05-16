@@ -162,10 +162,9 @@ export function ScreensPage() {
   }
 
   return (
-    <div className="space-y-5">
-      <div className="border border-border/60 bg-card rounded-lg overflow-hidden">
-        {/* Header */}
-        <div className="flex items-center justify-between px-4 py-3 border-b border-border/60">
+    <div>
+      {/* Header */}
+      <div className="flex items-center justify-between py-2.5 border-b border-border/60 mb-1">
           <div className="flex items-center gap-3">
             <div className="flex size-8 items-center justify-center rounded-lg bg-primary/10">
               <MonitorPlay className="size-4 text-primary" />
@@ -202,7 +201,6 @@ export function ScreensPage() {
         </div>
 
         {/* Tree */}
-        <div>
         <ContextMenu>
           <ContextMenuTrigger className="block min-h-[200px] p-2">
             {tree.tree.length === 0 ? (
@@ -254,8 +252,6 @@ export function ScreensPage() {
             </ContextMenuContent>
           )}
         </ContextMenu>
-        </div>
-      </div>
 
       {/* Create folder/screen dialog */}
       <Dialog
