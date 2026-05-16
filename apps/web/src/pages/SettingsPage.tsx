@@ -196,8 +196,6 @@ export function SettingsPage() {
             <Button
               type="button"
               variant="destructive"
-              size="sm"
-              className="h-8 text-xs font-medium"
               onClick={() => void onLogout()}
             >
               {t("settings.logout")}
@@ -213,8 +211,6 @@ export function SettingsPage() {
               <Button
                 type="button"
                 variant="destructive"
-                size="sm"
-                className="h-8 text-xs font-medium"
                 onClick={() => setDeleteOpen(true)}
                 disabled={deleting}
               >
