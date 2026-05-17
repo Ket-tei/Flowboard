@@ -47,6 +47,16 @@ export function HelpPage() {
               <span className="text-xs text-muted-foreground">canope.org</span>
             </a>
             <a
+              href="https://flowboard.canope.org/docs"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-3 py-2.5 text-sm font-medium hover:text-primary transition-colors"
+            >
+              <BookOpen className="size-4 text-muted-foreground shrink-0" />
+              <span className="flex-1">{t("help.docsLink")}</span>
+              <span className="text-xs text-muted-foreground">flowboard.canope.org/docs</span>
+            </a>
+            <a
               href="mailto:support@canope.org"
               className="flex items-center gap-3 py-2.5 text-sm font-medium hover:text-primary transition-colors"
             >

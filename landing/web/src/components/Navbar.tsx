@@ -22,6 +22,9 @@ export function Navbar({ onLoginClick }: Props) {
           <a href="#product" className="transition-colors hover:text-gray-900">
             {t("nav.product")}
           </a>
+          <a href="/docs" className="transition-colors hover:text-gray-900">
+            {t("nav.docs")}
+          </a>
           <a href="#pricing" className="transition-colors hover:text-gray-900">
             {t("nav.pricing")}
           </a>

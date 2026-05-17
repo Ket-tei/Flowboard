@@ -2,6 +2,7 @@
   "nav": {
     "product": "Product",
     "pricing": "Pricing",
+    "docs": "Docs",
     "login": "Sign in",
     "signup": "Sign up"
   },

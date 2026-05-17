@@ -12,6 +12,7 @@ import { DemoAccounts } from "./demos/DemoAccounts";
 import { useTranslation } from "react-i18next";
 import { MEDIA_POOL, INITIAL_MEDIA_IDS, type DemoMediaItem } from "./demos/demo-data";
 import { TermsPage, PrivacyPage, LegalNoticePage } from "./pages/LegalPage";
+import { DocsPage } from "./pages/DocsPage";
 
 export function App() {
   const { t } = useTranslation();
@@ -20,6 +21,7 @@ export function App() {
   if (path === "/terms") return <TermsPage />;
   if (path === "/privacy") return <PrivacyPage />;
   if (path === "/legal") return <LegalNoticePage />;
+  if (path === "/docs") return <DocsPage />;
 
 
   const [loginOpen, setLoginOpen] = useState(false);
