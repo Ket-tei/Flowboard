@@ -3,7 +3,7 @@ import { db } from "../db/index.js";
 import { screens, users, instanceConfig } from "../db/schema.js";
 
 export const PLAN_LIMITS = {
-  FREE: { screens: 3, users: 1 },
+  FREE: { screens: 1, users: 1 },
   PREMIUM: { screens: 15, users: Infinity },
   PRO: { screens: 30, users: Infinity },
   ENTERPRISE: { screens: Infinity, users: Infinity },
