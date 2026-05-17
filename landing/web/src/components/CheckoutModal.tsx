@@ -126,9 +126,10 @@ export function CheckoutModal({ planId, planName, onClose }: Props) {
           <button
             type="button"
             onClick={onClose}
+            aria-label="Fermer"
             className="absolute right-4 top-4 rounded-full p-1 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600"
           >
-            <X className="h-5 w-5" />
+            <X className="h-5 w-5" aria-hidden="true" />
           </button>
           <div className="space-y-5 text-center">
             <CheckCircle2 className="mx-auto h-14 w-14 text-emerald-500" />
@@ -167,9 +168,10 @@ export function CheckoutModal({ planId, planName, onClose }: Props) {
           <button
             type="button"
             onClick={onClose}
+            aria-label="Fermer"
             className="absolute right-4 top-4 rounded-full p-1 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600"
           >
-            <X className="h-5 w-5" />
+            <X className="h-5 w-5" aria-hidden="true" />
           </button>
           <div className="space-y-5 text-center">
             <AlertCircle className="mx-auto h-14 w-14 text-red-500" />
@@ -208,11 +210,12 @@ export function CheckoutModal({ planId, planName, onClose }: Props) {
 
           <div className="space-y-4">
             <div>
-              <label className="mb-1.5 block text-sm font-medium text-gray-700">
+              <label htmlFor="checkout-slug" className="mb-1.5 block text-sm font-medium text-gray-700">
                 {t("checkout.instanceName")}
               </label>
               <div className="flex items-center gap-0">
                 <input
+                  id="checkout-slug"
                   type="text"
                   value={slug}
                   onChange={(e) => setSlug(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ""))}
@@ -235,10 +238,11 @@ export function CheckoutModal({ planId, planName, onClose }: Props) {
             </div>
 
             <div>
-              <label className="mb-1.5 block text-sm font-medium text-gray-700">
+              <label htmlFor="checkout-email" className="mb-1.5 block text-sm font-medium text-gray-700">
                 {t("checkout.adminUsername")}
               </label>
               <input
+                id="checkout-email"
                 type="email"
                 value={adminEmail}
                 onChange={(e) => setAdminEmail(e.target.value)}
@@ -260,10 +264,11 @@ export function CheckoutModal({ planId, planName, onClose }: Props) {
             </div>
 
             <div>
-              <label className="mb-1.5 block text-sm font-medium text-gray-700">
+              <label htmlFor="checkout-password" className="mb-1.5 block text-sm font-medium text-gray-700">
                 {t("checkout.adminPassword")}
               </label>
               <input
+                id="checkout-password"
                 type="password"
                 value={adminPass}
                 onChange={(e) => setAdminPass(e.target.value)}

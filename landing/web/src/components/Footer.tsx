@@ -11,7 +11,7 @@ export function Footer() {
           {/* Brand */}
           <div className="flex flex-col items-center gap-1 sm:items-start">
             <div className="flex items-center gap-2">
-              <img src={logoSrc} alt="Flowboard" className="h-6 w-auto" />
+              <img src={logoSrc} alt="Flowboard" width={24} height={24} className="h-6 w-auto" />
               <span className="text-sm font-semibold text-gray-700">Flowboard</span>
             </div>
             <p className="text-xs text-gray-400">

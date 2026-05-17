@@ -1,10 +1,9 @@
-import { useState } from "react";
+import { lazy, Suspense, useState } from "react";
 import { Navbar } from "./components/Navbar";
 import { Hero } from "./components/Hero";
 import { SectionDemo } from "./components/SectionDemo";
 import { Pricing } from "./components/Pricing";
 import { Footer } from "./components/Footer";
-import { LoginModal } from "./components/LoginModal";
 import { DemoDashboard } from "./demos/DemoDashboard";
 import { DemoMedia } from "./demos/DemoMedia";
 import { DemoSlideshow } from "./demos/DemoSlideshow";
@@ -13,6 +12,8 @@ import { useTranslation } from "react-i18next";
 import { MEDIA_POOL, INITIAL_MEDIA_IDS, type DemoMediaItem } from "./demos/demo-data";
 import { TermsPage, PrivacyPage, LegalNoticePage } from "./pages/LegalPage";
 import { DocsPage } from "./pages/DocsPage";
+
+const LoginModal = lazy(() => import("./components/LoginModal").then((m) => ({ default: m.LoginModal })));
 
 export function App() {
   const { t } = useTranslation();
@@ -72,7 +73,11 @@ export function App() {
 
       <Pricing />
       <Footer />
-      {loginOpen && <LoginModal onClose={() => setLoginOpen(false)} />}
+      {loginOpen && (
+        <Suspense fallback={null}>
+          <LoginModal onClose={() => setLoginOpen(false)} />
+        </Suspense>
+      )}
     </div>
   );
 }

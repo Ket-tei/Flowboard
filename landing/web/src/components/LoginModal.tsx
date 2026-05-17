@@ -55,19 +55,21 @@ export function LoginModal({ onClose }: Props) {
         <button
           type="button"
           onClick={onClose}
+          aria-label="Fermer"
           className="absolute right-4 top-4 rounded-full p-1 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600"
         >
-          <X className="h-5 w-5" />
+          <X className="h-5 w-5" aria-hidden="true" />
         </button>
 
         <div className="space-y-6">
           <h3 className="text-xl font-bold text-gray-900">{t("login.title")}</h3>
 
           <div>
-            <label className="mb-1.5 block text-sm font-medium text-gray-700">
+            <label htmlFor="login-email" className="mb-1.5 block text-sm font-medium text-gray-700">
               {t("login.emailLabel")}
             </label>
             <input
+              id="login-email"
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}

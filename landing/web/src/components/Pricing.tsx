@@ -1,9 +1,10 @@
-import { useState } from "react";
+import { lazy, Suspense, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Check, Mail } from "lucide-react";
 import { cn } from "@/lib/cn";
-import { CheckoutModal } from "./CheckoutModal";
 import posthog from "posthog-js";
+
+const CheckoutModal = lazy(() => import("./CheckoutModal").then((m) => ({ default: m.CheckoutModal })));
 
 type Plan = {
   id: "FREE" | "PREMIUM" | "PRO";
@@ -132,11 +133,13 @@ export function Pricing() {
       </section>
 
       {selectedPlan && (
-        <CheckoutModal
-          planId={selectedPlan.id}
-          planName={t(selectedPlan.nameKey)}
-          onClose={() => setSelectedPlan(null)}
-        />
+        <Suspense fallback={null}>
+          <CheckoutModal
+            planId={selectedPlan.id}
+            planName={t(selectedPlan.nameKey)}
+            onClose={() => setSelectedPlan(null)}
+          />
+        </Suspense>
       )}
     </>
   );

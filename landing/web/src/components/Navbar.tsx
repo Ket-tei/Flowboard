@@ -12,7 +12,7 @@ export function Navbar({ onLoginClick }: Props) {
     <header className="sticky top-0 z-50 border-b border-gray-100 bg-white/80 backdrop-blur-lg">
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 sm:px-6">
         <a href="#" className="flex items-center gap-2.5">
-          <img src={logoSrc} alt="Flowboard" className="h-8 w-auto" />
+          <img src={logoSrc} alt="Flowboard" width={32} height={32} className="h-8 w-auto" />
           <span className="text-lg font-bold tracking-tight text-gray-900">
             Flowboard
           </span>

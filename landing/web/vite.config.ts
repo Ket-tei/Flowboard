@@ -9,6 +9,10 @@ export default defineConfig({
       "@": path.resolve(__dirname, "./src"),
     },
   },
+  build: {
+    sourcemap: true,
+    target: "es2020",
+  },
   server: {
     port: 5174,
     proxy: {
