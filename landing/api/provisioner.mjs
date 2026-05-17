@@ -9,12 +9,37 @@ import {
   BASE_PROTOCOL,
   BASE_HOST,
   GATEWAY_NETWORK,
+  LANDING_WAKE_TARGET,
   buildInstanceUrl,
 } from "./config.mjs";
 
 const __provisionerDir = path.dirname(fileURLToPath(import.meta.url));
 const GATEWAY_DIR = path.join(__provisionerDir, "gateway");
 const GATEWAY_INSTANCES_DIR = path.join(GATEWAY_DIR, "instances");
+// Per-instance nginx access logs (bind-mounted into the gateway container at
+// /var/log/flowboard). The reaper uses each file's mtime as "last activity".
+export const GATEWAY_LOGS_DIR = path.join(GATEWAY_DIR, "logs");
+
+function instanceComposePath(slug) {
+  return path.join(INSTANCES_DIR, slug, "docker-compose.yml");
+}
+
+// Stop an instance's containers without removing volumes/config (sleep).
+export async function stopInstance(slug) {
+  const projectName = `fb-${slug}`;
+  await exec("docker", [
+    "compose", "-p", projectName, "-f", instanceComposePath(slug), "stop",
+  ]);
+}
+
+// Restart a previously stopped instance (wake).
+export async function startInstance(slug) {
+  const projectName = `fb-${slug}`;
+  await exec("docker", [
+    "compose", "-p", projectName, "-f", instanceComposePath(slug), "up", "-d",
+  ], { cwd: APP_ROOT });
+  await waitForHealthy(projectName, instanceComposePath(slug));
+}
 
 function exec(cmd, args, opts = {}) {
   return new Promise((resolve, reject) => {
@@ -153,16 +178,21 @@ export async function deprovisionInstance({ slug }) {
   try { await rm(instanceDir, { recursive: true, force: true }); } catch {}
 }
 
-async function registerInGateway(slug, projectName) {
+export async function registerInGateway(slug, projectName) {
   await mkdir(GATEWAY_INSTANCES_DIR, { recursive: true });
+  await mkdir(GATEWAY_LOGS_DIR, { recursive: true });
 
   const webContainer = `${projectName}-web-1`;
   const serverName = `${slug}.${BASE_HOST}`;
 
+  // When the instance is asleep (containers stopped) the upstream fails to
+  // resolve/connect → nginx 502. error_page routes that to @wake, which hits
+  // the landing API to boot the instance and serve a friendly waiting page.
   const nginxConf = [
     `server {`,
     `    listen 80;`,
     `    server_name ${serverName};`,
+    `    access_log /var/log/flowboard/${slug}.log;`,
     ``,
     `    location / {`,
     `        set $upstream http://${webContainer}:80;`,
@@ -172,6 +202,13 @@ async function registerInGateway(slug, projectName) {
     `        proxy_set_header X-Real-IP $remote_addr;`,
     `        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;`,
     `        proxy_set_header X-Forwarded-Proto $scheme;`,
+    `        proxy_intercept_errors on;`,
+    `        error_page 502 503 504 = @wake;`,
+    `    }`,
+    ``,
+    `    location @wake {`,
+    `        proxy_pass http://${LANDING_WAKE_TARGET}/api/wake/${slug};`,
+    `        proxy_set_header Host $host;`,
     `    }`,
     `}`,
     ``,

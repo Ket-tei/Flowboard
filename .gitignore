@@ -12,5 +12,6 @@ landing/web/dist
 landing/web/.vite
 landing/api/db.json
 landing/api/.env
+landing/api/gateway/logs/*.log
 apps/api/.env
 .env

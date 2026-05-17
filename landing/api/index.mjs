@@ -1,8 +1,8 @@
 import "dotenv/config";
 import http from "node:http";
-import { readFile, writeFile } from "node:fs/promises";
 import { PORT, DB_PATH, buildInstanceUrl, buildRedirectUrl } from "./config.mjs";
-import { provisionInstance, deprovisionInstance } from "./provisioner.mjs";
+import { loadDb, saveDb } from "./db.mjs";
+import { provisionInstance, deprovisionInstance, startInstance } from "./provisioner.mjs";
 import { checkHostResources } from "./resources.mjs";
 import { sendResourceAlert, sendProvisioningFailureAlert } from "./mailer.mjs";
 import { handleStripeWebhook } from "./stripe-webhook.mjs";
@@ -10,6 +10,36 @@ import Stripe from "stripe";
 
 const SLUG_RE = /^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$/;
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+// Slugs whose wake (docker compose up) is in progress, to make /api/wake
+// idempotent under the burst of requests a refreshing browser produces.
+const waking = new Set();
+
+function sendHtml(res, statusCode, html) {
+  res.writeHead(statusCode, {
+    "Content-Type": "text/html; charset=utf-8",
+    "Content-Length": Buffer.byteLength(html),
+    "Cache-Control": "no-store",
+    "Retry-After": "12",
+  });
+  res.end(html);
+}
+
+function wakingPage(slug) {
+  return `<!doctype html><html lang="fr"><head><meta charset="utf-8">` +
+    `<meta name="viewport" content="width=device-width,initial-scale=1">` +
+    `<meta http-equiv="refresh" content="12"><title>Réveil en cours…</title>` +
+    `<style>body{font-family:system-ui,sans-serif;background:#0f172a;color:#e2e8f0;` +
+    `display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;text-align:center}` +
+    `.c{max-width:30rem;padding:2rem}h1{font-size:1.4rem;margin:0 0 .75rem}` +
+    `p{color:#94a3b8;line-height:1.5}.s{width:2.5rem;height:2.5rem;margin:0 auto 1.5rem;` +
+    `border:3px solid #1e293b;border-top-color:#38bdf8;border-radius:50%;animation:r 1s linear infinite}` +
+    `@keyframes r{to{transform:rotate(360deg)}}</style></head><body><div class="c">` +
+    `<div class="s"></div><h1>Réveil de votre espace…</h1>` +
+    `<p>Votre instance <strong>${slug}</strong> était en veille faute d'activité. ` +
+    `Elle redémarre — cette page se rafraîchit automatiquement dans quelques secondes.</p>` +
+    `</div></body></html>`;
+}
 
 function sendJson(res, statusCode, body) {
   const payload = JSON.stringify(body);
@@ -33,21 +63,6 @@ function readBody(req) {
     req.on("end", () => resolve(data));
     req.on("error", reject);
   });
-}
-
-async function loadDb() {
-  try {
-    const raw = await readFile(DB_PATH, "utf8");
-    const parsed = JSON.parse(raw);
-    const accounts = Array.isArray(parsed.accounts) ? parsed.accounts : [];
-    return { accounts };
-  } catch {
-    return { accounts: [] };
-  }
-}
-
-async function saveDb(db) {
-  await writeFile(DB_PATH, `${JSON.stringify(db, null, 2)}\n`, "utf8");
 }
 
 function parseJsonBody(raw) {
@@ -99,6 +114,36 @@ const server = http.createServer(async (req, res) => {
 
     if (req.url === "/api/health" && req.method === "GET") {
       return sendJson(res, 200, { ok: true });
+    }
+
+    // On-demand wake — proxied here by the gateway when a sleeping instance's
+    // upstream is unreachable. Boots the instance (idempotent) and serves a
+    // self-refreshing waiting page until the containers are back.
+    if (req.url?.startsWith("/api/wake/") && req.method === "GET") {
+      const slug = req.url.replace("/api/wake/", "").replace(/\/$/, "");
+      const { accounts } = await loadDb();
+      const account = accounts.find((a) => a.slug === slug);
+      if (!account) return sendJson(res, 404, { error: "Not found" });
+
+      if (account.sleepState === "sleeping" && !waking.has(slug)) {
+        waking.add(slug);
+        startInstance(slug)
+          .then(async () => {
+            const db = await loadDb();
+            const a = db.accounts.find((x) => x.slug === slug);
+            if (a) {
+              a.sleepState = "awake";
+              a.status = "ready";
+              delete a.sleptAt;
+              await saveDb(db);
+            }
+            console.log(`[wake] ${slug} woke up`);
+          })
+          .catch((err) => console.error(`[wake] ${slug} failed:`, err))
+          .finally(() => waking.delete(slug));
+      }
+
+      return sendHtml(res, 503, wakingPage(slug));
     }
 
     if (req.url === "/api/login" && req.method === "POST") {

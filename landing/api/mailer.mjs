@@ -47,6 +47,34 @@ export async function sendProvisioningFailureAlert({ slug, email, planId, error 
   }
 }
 
+export async function sendInstanceDeletedAlert({ slug, email }) {
+  try {
+    const transporter = getTransporter();
+    await transporter.sendMail({
+      from: SMTP_FROM,
+      to: email,
+      cc: ADMIN_EMAIL,
+      subject: `[Flowboard] Votre instance « ${slug} » a été supprimée`,
+      text: [
+        `Bonjour,`,
+        ``,
+        `Votre instance Flowboard « ${slug} » est restée inactive plus de 48h,`,
+        `elle a alors été mise en veille, puis supprimée après 7 jours sans`,
+        `réactivation (offre gratuite).`,
+        ``,
+        `Toutes ses données ont été effacées. Le nom « ${slug} » et l'adresse`,
+        `« ${email} » sont de nouveau disponibles : vous pouvez recréer une`,
+        `instance à tout moment depuis https://flowboard.canope.org.`,
+        ``,
+        `Pour conserver une instance active en permanence, passez à une offre`,
+        `payante.`,
+      ].join("\n"),
+    });
+  } catch (err) {
+    console.error("[mailer] Failed to send instance-deleted alert:", err.message);
+  }
+}
+
 export async function sendResourceAlert({ freeRamBytes, freeDiskBytes, slug, email }) {
   try {
     const transporter = getTransporter();
