@@ -97,6 +97,7 @@
     "genericError": "Login failed. Please try again."
   },
   "cookies": {
+    "title": "We respect your privacy",
     "message": "We use analytics cookies (PostHog) to understand how you use this site and improve your experience.",
     "learnMore": "Learn more",
     "accept": "Accept",
