@@ -4,7 +4,7 @@ import { readFile, writeFile } from "node:fs/promises";
 import { PORT, DB_PATH, buildInstanceUrl, buildRedirectUrl } from "./config.mjs";
 import { provisionInstance, deprovisionInstance } from "./provisioner.mjs";
 import { checkHostResources } from "./resources.mjs";
-import { sendResourceAlert } from "./mailer.mjs";
+import { sendResourceAlert, sendProvisioningFailureAlert } from "./mailer.mjs";
 import { handleStripeWebhook } from "./stripe-webhook.mjs";
 import Stripe from "stripe";
 
@@ -170,12 +170,13 @@ const server = http.createServer(async (req, res) => {
       try {
         provisionResult = await provisionInstance({ slug, email, password, planId });
       } catch (err) {
-        account.status = "failed";
-        account.error = String(err.message ?? err);
+        const errorMsg = String(err.message ?? err);
+        db.accounts = db.accounts.filter((a) => a.slug !== slug);
         await saveDb(db);
+        sendProvisioningFailureAlert({ slug, email, planId, error: errorMsg }).catch(() => {});
         return sendJson(res, 500, {
           error: "Provisioning failed",
-          message: account.error,
+          message: errorMsg,
           status: "failed",
         });
       }

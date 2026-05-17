@@ -7,6 +7,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import { useLocation } from "react-router-dom";
 import { useAuth } from "./auth-context";
 import { TUTORIAL_STEPS } from "@/components/tutorial/tutorial-steps";
 
@@ -25,6 +26,7 @@ const TutorialContext = createContext<TutorialContextValue | null>(null);
 
 export function TutorialProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
+  const { pathname } = useLocation();
   const [active, setActive] = useState(false);
   const [stepIndex, setStepIndex] = useState(0);
 
@@ -52,10 +54,14 @@ export function TutorialProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (user && !localStorage.getItem(STORAGE_KEY)) {
+      if (pathname === "/app/billing") {
+        localStorage.setItem(STORAGE_KEY, "1");
+        return;
+      }
       const timer = setTimeout(() => startTutorial(), 600);
       return () => clearTimeout(timer);
     }
-  }, [user, startTutorial]);
+  }, [user, pathname, startTutorial]);
 
   const value = useMemo(
     () => ({ active, stepIndex, totalSteps: TUTORIAL_STEPS.length, startTutorial, nextStep, skipTutorial }),

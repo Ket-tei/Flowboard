@@ -17,10 +17,12 @@ export async function bootstrapAdmin(): Promise<void> {
     console.log(`[bootstrap] Created admin user "${username}"`);
   }
 
-  const planId = (process.env.PLAN_ID ?? "FREE") as "FREE" | "PREMIUM" | "PRO";
-  await db
-    .insert(instanceConfig)
-    .values({ id: 1, planId })
-    .onDuplicateKeyUpdate({ set: { planId } });
-  console.log(`[bootstrap] Plan: ${planId}`);
+  const existingConfig = await db.select({ id: instanceConfig.id }).from(instanceConfig).where(eq(instanceConfig.id, 1)).limit(1);
+  if (existingConfig.length === 0) {
+    const planId = (process.env.PLAN_ID ?? "FREE") as "FREE" | "PREMIUM" | "PRO";
+    await db.insert(instanceConfig).values({ id: 1, planId });
+    console.log(`[bootstrap] Plan initialized: ${planId}`);
+  } else {
+    console.log(`[bootstrap] Plan already set, skipping.`);
+  }
 }

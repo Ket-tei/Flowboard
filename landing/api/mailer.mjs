@@ -1,7 +1,9 @@
 import nodemailer from "nodemailer";
 import { MIN_RAM_BYTES, MIN_DISK_BYTES } from "./resources.mjs";
 
-const ALERT_TO = process.env.ALERT_EMAIL_TO ?? "admin@canope.org";
+const ADMIN_EMAIL = "admin@canope.org";
+
+const ALERT_TO = process.env.ALERT_EMAIL_TO ?? ADMIN_EMAIL;
 const SMTP_FROM = process.env.SMTP_USER ?? "automation@canope.org";
 
 function getTransporter() {
@@ -19,6 +21,30 @@ function getTransporter() {
 function toGB(bytes) {
   if (bytes === Infinity) return "∞";
   return (bytes / 1024 ** 3).toFixed(1);
+}
+
+export async function sendProvisioningFailureAlert({ slug, email, planId, error }) {
+  try {
+    const transporter = getTransporter();
+    await transporter.sendMail({
+      from: SMTP_FROM,
+      to: ADMIN_EMAIL,
+      subject: `[Flowboard] Échec de déploiement — instance ${slug}`,
+      text: [
+        "Un déploiement d'instance a échoué. Les données ont été supprimées de la base de données.",
+        "L'utilisateur peut réessayer avec les mêmes slug et email.",
+        "",
+        `Instance : ${slug}`,
+        `Email admin : ${email}`,
+        `Plan demandé : ${planId}`,
+        "",
+        "Erreur :",
+        error,
+      ].join("\n"),
+    });
+  } catch (err) {
+    console.error("[mailer] Failed to send provisioning failure alert:", err.message);
+  }
 }
 
 export async function sendResourceAlert({ freeRamBytes, freeDiskBytes, slug, email }) {
