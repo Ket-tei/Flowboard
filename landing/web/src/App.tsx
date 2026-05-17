@@ -12,6 +12,7 @@ import { useTranslation } from "react-i18next";
 import { MEDIA_POOL, INITIAL_MEDIA_IDS, type DemoMediaItem } from "./demos/demo-data";
 import { TermsPage, PrivacyPage, LegalNoticePage } from "./pages/LegalPage";
 import { DocsPage } from "./pages/DocsPage";
+import { CookieBanner } from "./components/CookieBanner";
 
 const LoginModal = lazy(() => import("./components/LoginModal").then((m) => ({ default: m.LoginModal })));
 
@@ -78,6 +79,7 @@ export function App() {
           <LoginModal onClose={() => setLoginOpen(false)} />
         </Suspense>
       )}
+      <CookieBanner />
     </div>
   );
 }

@@ -96,6 +96,12 @@
     "notFound": "No instance is associated with this email.",
     "genericError": "Login failed. Please try again."
   },
+  "cookies": {
+    "message": "We use analytics cookies (PostHog) to understand how you use this site and improve your experience.",
+    "learnMore": "Learn more",
+    "accept": "Accept",
+    "decline": "Decline"
+  },
   "footer": {
     "by": "by",
     "docs": "Documentation",
