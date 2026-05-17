@@ -32,6 +32,34 @@ export async function handleStripeWebhook(rawBody, signature, db, saveDb) {
     throw Object.assign(new Error(`Webhook signature verification failed: ${err.message}`), { status: 400 });
   }
 
+  // Subscription actually ended (reached the cancel_at_period_end date, or
+  // was cancelled in Stripe) → downgrade the instance to FREE.
+  if (event.type === "customer.subscription.deleted") {
+    const subscription = event.data.object;
+    const account = db.accounts.find((a) => a.stripeSubscriptionId === subscription.id);
+    if (!account) {
+      return { ignored: true, reason: "no_account_for_subscription", subscriptionId: subscription.id };
+    }
+    const res = await fetch(`${account.url ?? `http://${account.slug}`}/api/instance/plan`, {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${account.deleteToken}`,
+      },
+      body: JSON.stringify({ planId: "FREE" }),
+    });
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      throw new Error(`Instance plan downgrade failed (${res.status}): ${body.error ?? "unknown"}`);
+    }
+    account.planId = "FREE";
+    account.stripeSubscriptionId = null;
+    account.cancelAtPeriodEnd = false;
+    await saveDb(db);
+    console.log(`[stripe-webhook] Subscription ended, downgraded to FREE: ${account.slug}`);
+    return { ok: true, slug: account.slug, planId: "FREE" };
+  }
+
   if (event.type !== "checkout.session.completed") {
     return { ignored: true, type: event.type };
   }
@@ -75,6 +103,7 @@ export async function handleStripeWebhook(rawBody, signature, db, saveDb) {
 
   // Mirror the change in db.json (save subscription + customer IDs for future cancellation)
   account.planId = planId;
+  account.cancelAtPeriodEnd = false;
   if (session.subscription) account.stripeSubscriptionId = session.subscription;
   if (session.customer) account.stripeCustomerId = session.customer;
   await saveDb(db);

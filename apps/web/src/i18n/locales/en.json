@@ -224,7 +224,13 @@
     "cancelSuccess": "Your subscription has been cancelled. You are now on the Free plan.",
     "cancelError": "Failed to cancel the subscription. Please contact support.",
     "cancelling": "Cancelling…",
-    "cancelAbort": "Keep subscription"
+    "cancelAbort": "Keep subscription",
+    "cancelTitle": "Cancel subscription",
+    "cancelExplainPeriodEnd": "Your subscription stays active until {{date}}. On that date your instance will automatically revert to the Free plan. No refund is issued for the current period.",
+    "cancelExplainImmediate": "Your instance will revert to the Free plan immediately.",
+    "cancelScreensNote": "Note: beyond the Free plan limit (1 screen), the extra screens (the most recent ones) will no longer be broadcast. They are not deleted and will broadcast again if you resubscribe.",
+    "cancelConfirmCta": "Confirm cancellation",
+    "cancelScheduled": "Cancellation scheduled. Your plan stays active until {{date}}, then automatically reverts to Free."
   },
   "help": {
     "subtitle": "Documentation and tutorials.",

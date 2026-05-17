@@ -236,7 +236,39 @@ const server = http.createServer(async (req, res) => {
       return;
     }
 
-    // Cancel Stripe subscription — authenticated with deleteToken
+    // Subscription info — used by the cancel-confirmation popup to show the
+    // exact date the plan will revert to FREE.
+    if (req.url?.match(/^\/api\/instances\/[^/]+\/subscription$/) && req.method === "GET") {
+      const slug = req.url.split("/")[3];
+      const token = req.headers.authorization?.replace(/^Bearer\s+/i, "");
+      const db = await loadDb();
+      const account = db.accounts.find((a) => a.slug === slug);
+      if (!account) return sendJson(res, 404, { error: "Not found" });
+      if (!token || !account.deleteToken || token !== account.deleteToken) {
+        return sendJson(res, 403, { error: "Forbidden" });
+      }
+      const stripeKey = process.env.STRIPE_SECRET_KEY;
+      if (!account.stripeSubscriptionId || !stripeKey) {
+        return sendJson(res, 200, { stripe: false });
+      }
+      try {
+        const stripe = new Stripe(stripeKey);
+        const sub = await stripe.subscriptions.retrieve(account.stripeSubscriptionId);
+        const periodEnd = sub.current_period_end ?? sub.items?.data?.[0]?.current_period_end ?? null;
+        return sendJson(res, 200, {
+          stripe: true,
+          currentPeriodEnd: periodEnd,
+          cancelAtPeriodEnd: Boolean(sub.cancel_at_period_end),
+        });
+      } catch (err) {
+        console.error("[subscription] Stripe error:", err.message);
+        return sendJson(res, 200, { stripe: false });
+      }
+    }
+
+    // Cancel subscription — authenticated with deleteToken.
+    // Stripe-paid plans: schedule cancellation at period end (keep access
+    // until then, no refund). Manual/script plans: downgrade now.
     if (req.url?.match(/^\/api\/instances\/[^/]+\/cancel-subscription$/) && req.method === "POST") {
       const slug = req.url.split("/")[3];
       const token = req.headers.authorization?.replace(/^Bearer\s+/i, "");
@@ -248,21 +280,27 @@ const server = http.createServer(async (req, res) => {
         return sendJson(res, 403, { error: "Forbidden" });
       }
 
-      // Plans set manually (via set-plan.sh) or never paid have no Stripe
-      // subscription — cancellation just downgrades to FREE without Stripe.
       if (account.stripeSubscriptionId) {
         const stripeKey = process.env.STRIPE_SECRET_KEY;
         if (!stripeKey) return sendJson(res, 500, { error: "Stripe not configured" });
         const stripe = new Stripe(stripeKey);
+        let sub;
         try {
-          await stripe.subscriptions.cancel(account.stripeSubscriptionId);
+          sub = await stripe.subscriptions.update(account.stripeSubscriptionId, {
+            cancel_at_period_end: true,
+          });
         } catch (err) {
           console.error("[cancel-subscription] Stripe error:", err.message);
           return sendJson(res, 500, { error: `Stripe error: ${err.message}` });
         }
+        const periodEnd = sub.current_period_end ?? sub.items?.data?.[0]?.current_period_end ?? null;
+        account.cancelAtPeriodEnd = true;
+        await saveDb(db);
+        console.log(`[cancel-subscription] ${slug} scheduled to cancel at period end (${periodEnd})`);
+        return sendJson(res, 200, { ok: true, mode: "period_end", currentPeriodEnd: periodEnd });
       }
 
-      // Reset plan to FREE on the instance
+      // No Stripe subscription (manual/script plan) — downgrade immediately.
       try {
         const res2 = await fetch(`${account.url}/api/instance/plan`, {
           method: "PATCH",
@@ -284,8 +322,8 @@ const server = http.createServer(async (req, res) => {
       account.stripeSubscriptionId = null;
       await saveDb(db);
 
-      console.log(`[cancel-subscription] Subscription cancelled: ${slug}`);
-      return sendJson(res, 200, { ok: true, planId: "FREE" });
+      console.log(`[cancel-subscription] ${slug} downgraded to FREE immediately`);
+      return sendJson(res, 200, { ok: true, mode: "immediate", planId: "FREE" });
     }
 
     // Stripe webhook — raw body required for signature verification

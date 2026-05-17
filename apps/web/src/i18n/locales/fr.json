@@ -224,7 +224,13 @@
     "cancelSuccess": "Votre abonnement a bien été résilié. Vous êtes maintenant sur le plan Free.",
     "cancelError": "Impossible de résilier l'abonnement. Veuillez contacter le support.",
     "cancelling": "Résiliation…",
-    "cancelAbort": "Conserver l'abonnement"
+    "cancelAbort": "Conserver l'abonnement",
+    "cancelTitle": "Résilier l'abonnement",
+    "cancelExplainPeriodEnd": "Votre abonnement reste actif jusqu'au {{date}}. À cette date, votre instance repassera automatiquement en plan Gratuit. Aucun remboursement n'est effectué pour la période en cours.",
+    "cancelExplainImmediate": "Votre instance repassera immédiatement en plan Gratuit.",
+    "cancelScreensNote": "Note : au-delà de la limite du plan Gratuit (1 écran), les écrans excédentaires (les plus récents) ne seront plus diffusés. Ils ne sont pas supprimés et seront à nouveau diffusés si vous vous réabonnez.",
+    "cancelConfirmCta": "Confirmer la résiliation",
+    "cancelScheduled": "Résiliation programmée. Votre plan reste actif jusqu'au {{date}}, puis repassera automatiquement en Gratuit."
   },
   "help": {
     "subtitle": "Documentation et tutoriels.",

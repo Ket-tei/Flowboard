@@ -62,6 +62,18 @@ export async function registerInstanceRoutes(app: FastifyInstance) {
     return reply.status(res.status).send(body);
   });
 
+  app.get("/instance/subscription", { preHandler: adminPreHandler }, async (_request, reply) => {
+    if (!LANDING_API_URL || !INSTANCE_SLUG || !INSTANCE_DELETE_TOKEN) {
+      return reply.status(501).send({ error: "Instance management not configured" });
+    }
+    const res = await fetch(`${LANDING_API_URL}/api/instances/${INSTANCE_SLUG}/subscription`, {
+      method: "GET",
+      headers: { Authorization: `Bearer ${INSTANCE_DELETE_TOKEN}` },
+    });
+    const body = await res.json().catch(() => ({}));
+    return reply.status(res.status).send(body);
+  });
+
   app.post("/instance/cancel-subscription", { preHandler: adminPreHandler }, async (_request, reply) => {
     if (!LANDING_API_URL || !INSTANCE_SLUG || !INSTANCE_DELETE_TOKEN) {
       return reply.status(501).send({ error: "Instance management not configured" });

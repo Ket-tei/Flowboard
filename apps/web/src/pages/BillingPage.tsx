@@ -2,7 +2,30 @@ import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { CreditCard, CheckCircle2, ArrowRight, Infinity as InfinityIcon, Monitor, Users, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogMedia,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { apiFetch } from "@/lib/api";
+
+type SubscriptionInfo = {
+  stripe: boolean;
+  currentPeriodEnd?: number | null;
+  cancelAtPeriodEnd?: boolean;
+};
+
+function formatDate(unixSeconds: number, locale: string): string {
+  return new Intl.DateTimeFormat(locale, { dateStyle: "long" }).format(
+    new Date(unixSeconds * 1000)
+  );
+}
 
 const STRIPE_PREMIUM_LINK = "https://buy.stripe.com/eVq9ATamnfJN8VP3WEbsc02";
 const STRIPE_PRO_LINK = "https://buy.stripe.com/4gM6oH3XZcxB6NHgJqbsc03";
@@ -107,9 +130,17 @@ function UsageBar({ icon, label, used, limit, formatLabel }: UsageBarProps) {
 }
 
 export function BillingPage() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [plan, setPlan] = useState<PlanInfo | null>(null);
-  const [cancelState, setCancelState] = useState<"idle" | "confirm" | "loading" | "success" | "error">("idle");
+  const [dlgOpen, setDlgOpen] = useState(false);
+  const [subInfo, setSubInfo] = useState<SubscriptionInfo | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [result, setResult] = useState<
+    | null
+    | { kind: "scheduled"; date: string }
+    | { kind: "immediate" }
+    | { kind: "error" }
+  >(null);
 
   useEffect(() => {
     apiFetch<PlanInfo>("/api/instance/plan")
@@ -117,20 +148,46 @@ export function BillingPage() {
       .catch(() => {});
   }, []);
 
-  async function handleCancelSubscription() {
-    if (cancelState === "confirm") {
-      setCancelState("loading");
-      try {
-        await apiFetch("/api/instance/cancel-subscription", { method: "POST" });
-        setCancelState("success");
-        setPlan((prev) => prev ? { ...prev, planId: "FREE" } : prev);
-      } catch {
-        setCancelState("error");
-      }
-    } else {
-      setCancelState("confirm");
+  async function openCancelDialog() {
+    setBusy(true);
+    setResult(null);
+    try {
+      const info = await apiFetch<SubscriptionInfo>("/api/instance/subscription");
+      setSubInfo(info);
+    } catch {
+      setSubInfo({ stripe: false });
+    } finally {
+      setBusy(false);
+      setDlgOpen(true);
     }
   }
+
+  async function confirmCancel() {
+    setBusy(true);
+    try {
+      const res = await apiFetch<{ mode?: string; currentPeriodEnd?: number | null }>(
+        "/api/instance/cancel-subscription",
+        { method: "POST" }
+      );
+      setDlgOpen(false);
+      if (res.mode === "period_end" && res.currentPeriodEnd) {
+        setResult({ kind: "scheduled", date: formatDate(res.currentPeriodEnd, i18n.language) });
+      } else {
+        setResult({ kind: "immediate" });
+        setPlan((prev) => (prev ? { ...prev, planId: "FREE" } : prev));
+      }
+    } catch {
+      setDlgOpen(false);
+      setResult({ kind: "error" });
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  const periodEndDate =
+    subInfo?.stripe && subInfo.currentPeriodEnd
+      ? formatDate(subInfo.currentPeriodEnd, i18n.language)
+      : null;
 
   const planId = plan?.planId ?? "FREE";
   const limits = plan?.limits;
@@ -270,43 +327,60 @@ export function BillingPage() {
               {t("billing.cancelSubscription")}
             </h3>
 
-            {cancelState === "success" && (
+            {result?.kind === "scheduled" && (
+              <p className="text-sm text-success">
+                {t("billing.cancelScheduled", { date: result.date })}
+              </p>
+            )}
+            {result?.kind === "immediate" && (
               <p className="text-sm text-success">{t("billing.cancelSuccess")}</p>
             )}
-            {cancelState === "error" && (
+            {result?.kind === "error" && (
               <p className="text-sm text-destructive">{t("billing.cancelError")}</p>
             )}
-            {cancelState !== "success" && (
-              <>
-                {cancelState === "confirm" && (
-                  <p className="text-sm text-warning-foreground bg-warning/15 rounded px-3 py-2 flex items-start gap-2">
-                    <AlertTriangle className="size-4 shrink-0 mt-0.5" />
-                    {t("billing.cancelConfirm")}
-                  </p>
-                )}
-                <div className="flex gap-2">
-                  <Button
-                    variant="destructive"
-                    size="sm"
-                    className="h-8"
-                    disabled={cancelState === "loading"}
-                    onClick={handleCancelSubscription}
-                  >
-                    {cancelState === "loading" ? t("billing.cancelling") : t("billing.cancelSubscription")}
-                  </Button>
-                  {cancelState === "confirm" && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="h-8"
-                      onClick={() => setCancelState("idle")}
-                    >
-                      {t("billing.cancelAbort")}
-                    </Button>
-                  )}
-                </div>
-              </>
+
+            {result?.kind !== "scheduled" && result?.kind !== "immediate" && (
+              <Button
+                variant="destructive"
+                size="sm"
+                className="h-8"
+                disabled={busy}
+                onClick={openCancelDialog}
+              >
+                {busy ? t("billing.cancelling") : t("billing.cancelSubscription")}
+              </Button>
             )}
+
+            <AlertDialog open={dlgOpen} onOpenChange={setDlgOpen}>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogMedia className="bg-destructive/10 text-destructive">
+                    <AlertTriangle />
+                  </AlertDialogMedia>
+                  <AlertDialogTitle>{t("billing.cancelTitle")}</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    {periodEndDate
+                      ? t("billing.cancelExplainPeriodEnd", { date: periodEndDate })
+                      : t("billing.cancelExplainImmediate")}
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <p className="text-xs text-muted-foreground">
+                  {t("billing.cancelScreensNote")}
+                </p>
+                <AlertDialogFooter>
+                  <AlertDialogCancel disabled={busy}>
+                    {t("billing.cancelAbort")}
+                  </AlertDialogCancel>
+                  <AlertDialogAction
+                    variant="destructive"
+                    disabled={busy}
+                    onClick={confirmCancel}
+                  >
+                    {busy ? t("billing.cancelling") : t("billing.cancelConfirmCta")}
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
           </div>
         )}
     </div>
