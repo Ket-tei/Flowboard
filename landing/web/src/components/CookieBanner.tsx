@@ -29,7 +29,6 @@ export function CookieBanner() {
     <div className="fixed bottom-0 left-0 right-0 z-50 border-t border-gray-200 bg-white shadow-[0_-4px_24px_rgba(0,0,0,0.08)] px-4 py-5 sm:px-6">
       <div className="mx-auto flex max-w-6xl flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-start gap-3">
-          <span className="mt-0.5 text-xl">🍪</span>
           <div>
             <p className="text-sm font-semibold text-gray-900">{t("cookies.title")}</p>
             <p className="mt-0.5 text-sm text-gray-500 leading-relaxed">
