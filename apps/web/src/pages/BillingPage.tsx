@@ -13,8 +13,13 @@ const INSTANCE_SLUG = window.location.hostname.split(".")[0] || "default";
 type PlanId = "FREE" | "PREMIUM" | "PRO" | "ENTERPRISE";
 
 interface PlanLimits {
-  screens: number;
-  users: number;
+  screens: number | null;
+  users: number | null;
+}
+
+// JSON.stringify(Infinity) === null — treat a null limit as unlimited.
+function normalizeLimit(v: number | null | undefined): number {
+  return v == null ? Infinity : v;
 }
 
 interface PlanUsage {
@@ -131,8 +136,14 @@ export function BillingPage() {
   const limits = plan?.limits;
   const usage = plan?.usage;
 
-  const screensAtLimit = limits && usage ? isNearLimit(usage.screens, limits.screens) : false;
-  const usersAtLimit = limits && usage ? isNearLimit(usage.users, limits.users) : false;
+  const screensLimit = normalizeLimit(limits?.screens);
+  const usersLimit = normalizeLimit(limits?.users);
+  // The account/users tracker is only meaningful on FREE (capped at 1);
+  // paid plans are unlimited, so the bar is hidden.
+  const showUsersBar = Number.isFinite(usersLimit);
+
+  const screensAtLimit = limits && usage ? isNearLimit(usage.screens, screensLimit) : false;
+  const usersAtLimit = limits && usage && showUsersBar ? isNearLimit(usage.users, usersLimit) : false;
 
   return (
     <div>
@@ -175,7 +186,7 @@ export function BillingPage() {
                 icon={<Monitor className="size-3.5" />}
                 label={t("billing.screensLimit")}
                 used={usage.screens}
-                limit={limits.screens}
+                limit={screensLimit}
                 formatLabel={(used, limit) =>
                   limit === Infinity ? (
                     <span className="flex items-center gap-1">
@@ -186,21 +197,23 @@ export function BillingPage() {
                   )
                 }
               />
-              <UsageBar
-                icon={<Users className="size-3.5" />}
-                label={t("billing.usersLimit")}
-                used={usage.users}
-                limit={limits.users}
-                formatLabel={(used, limit) =>
-                  limit === Infinity ? (
-                    <span className="flex items-center gap-1">
-                      {used} / <InfinityIcon className="size-3.5" />
-                    </span>
-                  ) : (
-                    `${used} / ${limit}`
-                  )
-                }
-              />
+              {showUsersBar && (
+                <UsageBar
+                  icon={<Users className="size-3.5" />}
+                  label={t("billing.usersLimit")}
+                  used={usage.users}
+                  limit={usersLimit}
+                  formatLabel={(used, limit) =>
+                    limit === Infinity ? (
+                      <span className="flex items-center gap-1">
+                        {used} / <InfinityIcon className="size-3.5" />
+                      </span>
+                    ) : (
+                      `${used} / ${limit}`
+                    )
+                  }
+                />
+              )}
             </div>
             {(screensAtLimit || usersAtLimit) && (
               <p className="text-xs text-destructive bg-destructive/10 rounded px-3 py-2">
@@ -215,8 +228,16 @@ export function BillingPage() {
           <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
             {t("billing.paymentSection")}
           </h3>
-          {planId === "PRO" || planId === "ENTERPRISE" ? (
+          {planId === "ENTERPRISE" ? (
             <p className="text-sm text-muted-foreground">{t("billing.topPlan")}</p>
+          ) : planId === "PRO" ? (
+            <a
+              href="mailto:support@canope.org"
+              className="inline-flex h-8 items-center gap-2 rounded-md bg-primary px-3 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
+            >
+              {t("billing.enterpriseContact")}
+              <ArrowRight className="size-3.5" />
+            </a>
           ) : (
             <div className="flex flex-wrap gap-2">
               {planId === "FREE" && (

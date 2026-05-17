@@ -248,19 +248,18 @@ const server = http.createServer(async (req, res) => {
         return sendJson(res, 403, { error: "Forbidden" });
       }
 
-      const stripeKey = process.env.STRIPE_SECRET_KEY;
-      if (!stripeKey) return sendJson(res, 500, { error: "Stripe not configured" });
-
-      if (!account.stripeSubscriptionId) {
-        return sendJson(res, 400, { error: "No active subscription found" });
-      }
-
-      const stripe = new Stripe(stripeKey);
-      try {
-        await stripe.subscriptions.cancel(account.stripeSubscriptionId);
-      } catch (err) {
-        console.error("[cancel-subscription] Stripe error:", err.message);
-        return sendJson(res, 500, { error: `Stripe error: ${err.message}` });
+      // Plans set manually (via set-plan.sh) or never paid have no Stripe
+      // subscription — cancellation just downgrades to FREE without Stripe.
+      if (account.stripeSubscriptionId) {
+        const stripeKey = process.env.STRIPE_SECRET_KEY;
+        if (!stripeKey) return sendJson(res, 500, { error: "Stripe not configured" });
+        const stripe = new Stripe(stripeKey);
+        try {
+          await stripe.subscriptions.cancel(account.stripeSubscriptionId);
+        } catch (err) {
+          console.error("[cancel-subscription] Stripe error:", err.message);
+          return sendJson(res, 500, { error: `Stripe error: ${err.message}` });
+        }
       }
 
       // Reset plan to FREE on the instance

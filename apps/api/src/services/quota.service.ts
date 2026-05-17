@@ -1,4 +1,4 @@
-import { count, eq } from "drizzle-orm";
+import { count, eq, lte } from "drizzle-orm";
 import { db } from "../db/index.js";
 import { screens, users, instanceConfig } from "../db/schema.js";
 
@@ -50,6 +50,20 @@ export async function checkUserLimit(): Promise<void> {
   if (limit === Infinity) return;
   const [{ value }] = await db.select({ value: count() }).from(users);
   if (value >= limit) throw new QuotaError(`Plan ${info.planId}: max ${limit} utilisateur(s)`);
+}
+
+// A screen is broadcast only if its rank (oldest first, by id) is within the
+// current plan's screen limit. On downgrade, screens beyond the limit stop
+// broadcasting; on re-upgrade they automatically resume — no stored state.
+export async function isScreenWithinPlan(screenId: number): Promise<boolean> {
+  const info = await getInstancePlanInfo();
+  const limit = resolveScreenLimit(info);
+  if (limit === Infinity) return true;
+  const [{ value }] = await db
+    .select({ value: count() })
+    .from(screens)
+    .where(lte(screens.id, screenId));
+  return value <= limit;
 }
 
 export async function getInstanceUsage(): Promise<{ screens: number; users: number }> {

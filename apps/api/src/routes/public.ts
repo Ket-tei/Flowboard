@@ -14,6 +14,7 @@ function safeParseJson(raw: string): Record<string, unknown> {
   }
 }
 import { resolveFilePath } from "../services/upload.service.js";
+import { isScreenWithinPlan } from "../services/quota.service.js";
 
 export async function registerPublicRoutes(app: FastifyInstance) {
   app.get("/public/screens/:token/manifest", async (request, reply) => {
@@ -25,6 +26,11 @@ export async function registerPublicRoutes(app: FastifyInstance) {
       .limit(1);
     if (!scr[0]) {
       return reply.status(404).send({ error: "not found" });
+    }
+
+    // Screens beyond the current plan's limit are not broadcast (reversible).
+    if (!(await isScreenWithinPlan(scr[0].id))) {
+      return { revision: scr[0].revision, screenId: scr[0].id, items: [], widgets: [] };
     }
 
     if (scr[0].displayMode === "TEMPLATE") {

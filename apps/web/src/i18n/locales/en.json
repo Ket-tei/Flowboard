@@ -215,6 +215,7 @@
     "usageNearLimit": "You are approaching your plan's limit. Upgrade to a higher plan to keep growing.",
     "paymentSection": "Subscription",
     "topPlan": "You are on the most complete plan.",
+    "enterpriseContact": "Need more? Contact sales (Enterprise)",
     "upgradeToPremium": "Upgrade to Premium — €35/month",
     "upgradeToPro": "Upgrade to Pro — €60/month",
     "quotaExceeded": "Quota reached for your plan",
