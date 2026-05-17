@@ -6,6 +6,7 @@
 // "Last activity" = mtime of the per-instance nginx access log written by the
 // gateway (landing/api/gateway/logs/<slug>.log). Falls back to createdAt when
 // the log does not exist yet.
+import "dotenv/config";
 import { stat } from "node:fs/promises";
 import path from "node:path";
 import { loadDb, saveDb } from "./db.mjs";
