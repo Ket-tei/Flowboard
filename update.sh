@@ -28,8 +28,8 @@ spinner() {
 # ── count instances ───────────────────────────────────────────────────────────
 mapfile -t SLUGS < <(ls "$INSTANCES_DIR" 2>/dev/null || true)
 instance_count=${#SLUGS[@]}
-# steps: pull + landing-api restart + N*(build+up)
-total=$((2 + instance_count * 2))
+# steps: pull + landing-api restart + shared images build + N*up
+total=$((3 + instance_count))
 
 printf "\n${BOLD}▶ Flowboard update${RESET}  (${instance_count} instance(s) detected)\n\n"
 
@@ -55,21 +55,25 @@ wait $BUILD_PID || { warn "Build landing échoué — voir /tmp/landing-build.lo
 systemctl restart flowboard-landing-api
 ok "Service flowboard-landing-api redémarré"
 
-# ── 3. Rebuild & restart chaque instance ─────────────────────────────────────
+# ── 3. Build des images partagées (une seule fois) ───────────────────────────
+progress "Images partagées — build flowboard-api / flowboard-web"
+(
+  docker build -t flowboard-api:latest -f apps/api/Dockerfile "$FLOWBOARD_DIR" \
+  && docker build -t flowboard-web:latest -f apps/web/Dockerfile "$FLOWBOARD_DIR"
+) > /tmp/shared-images-build.log 2>&1 &
+BUILD_PID=$!
+spinner $BUILD_PID "docker build images partagées..."
+wait $BUILD_PID || fail "Build des images partagées échoué — voir /tmp/shared-images-build.log"
+
+# ── 4. Restart chaque instance (up-only, pas de build) ───────────────────────
 for slug in "${SLUGS[@]}"; do
   compose="$INSTANCES_DIR/$slug/docker-compose.yml"
   project="fb-$slug"
 
   if [[ ! -f "$compose" ]]; then
     warn "Instance $slug : docker-compose.yml introuvable, ignorée"
-    step=$((step+2)); continue
+    step=$((step+1)); continue
   fi
-
-  progress "Instance ${BOLD}$slug${RESET} — build de l'image"
-  docker compose -p "$project" -f "$compose" build --quiet > /tmp/build-$slug.log 2>&1 &
-  BUILD_PID=$!
-  spinner $BUILD_PID "docker compose build $slug..."
-  wait $BUILD_PID || { warn "Build $slug échoué — voir /tmp/build-$slug.log"; step=$((step+1)); continue; }
 
   progress "Instance ${BOLD}$slug${RESET} — redémarrage des conteneurs"
   docker compose -p "$project" -f "$compose" up -d --remove-orphans > /tmp/up-$slug.log 2>&1 &

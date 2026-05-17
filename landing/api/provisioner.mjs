@@ -98,9 +98,7 @@ export async function provisionInstance({ slug, email, password, planId }) {
 
   await ensureGatewayNetwork();
 
-  await exec("docker", ["compose", "-p", projectName, "-f", composePath, "build"], {
-    cwd: APP_ROOT,
-  });
+  await ensureSharedImages();
 
   await exec("docker", ["compose", "-p", projectName, "-f", composePath, "up", "-d"], {
     cwd: APP_ROOT,
@@ -205,6 +203,33 @@ async function reloadGateway() {
       "up",
       "-d",
     ]);
+  }
+}
+
+export const SHARED_IMAGES = [
+  { tag: "flowboard-api:latest", dockerfile: "apps/api/Dockerfile" },
+  { tag: "flowboard-web:latest", dockerfile: "apps/web/Dockerfile" },
+];
+
+export async function buildSharedImages() {
+  for (const { tag, dockerfile } of SHARED_IMAGES) {
+    await exec("docker", ["build", "-t", tag, "-f", dockerfile, "."], {
+      cwd: APP_ROOT,
+    });
+  }
+}
+
+// Build the shared api/web images once if they are missing. Instances reference
+// them by tag (no per-instance build).
+async function ensureSharedImages() {
+  for (const { tag, dockerfile } of SHARED_IMAGES) {
+    try {
+      await exec("docker", ["image", "inspect", tag]);
+    } catch {
+      await exec("docker", ["build", "-t", tag, "-f", dockerfile, "."], {
+        cwd: APP_ROOT,
+      });
+    }
   }
 }
 
