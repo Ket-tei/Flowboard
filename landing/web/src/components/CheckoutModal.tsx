@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { X, CheckCircle2, Loader2, AlertCircle } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { checkPassword, isPasswordValid } from "@/lib/password";
+import posthog from "posthog-js";
 
 const SLUG_RE = /^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$/;
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -84,6 +85,7 @@ export function CheckoutModal({ planId, planName, onClose }: Props) {
 
       setInstanceUrl(data.url ?? `http://${slug}.${DOMAIN}`);
       setSuccessUrl(data.redirectUrl ?? data.url ?? `http://${slug}.${DOMAIN}`);
+      posthog.capture("instance_created", { planId });
       setPhase("ready");
     } catch {
       setFormError(t("checkout.genericError"));

@@ -36,12 +36,6 @@ export const TUTORIAL_STEPS: TutorialStep[] = [
     target: '[data-tutorial="nav-settings"]',
   },
   {
-    id: "dashboard-add-widget",
-    titleKey: "tutorial.step6Title",
-    descKey: "tutorial.step6Desc",
-    target: '[data-tutorial="dashboard-add-widget"]',
-  },
-  {
     id: "done",
     titleKey: "tutorial.step7Title",
     descKey: "tutorial.step7Desc",

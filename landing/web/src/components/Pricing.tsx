@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { Check, Mail } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { CheckoutModal } from "./CheckoutModal";
+import posthog from "posthog-js";
 
 type Plan = {
   id: "FREE" | "PREMIUM" | "PRO";
@@ -86,7 +87,7 @@ export function Pricing() {
                 </ul>
                 <button
                   type="button"
-                  onClick={() => setSelectedPlan(plan)}
+                  onClick={() => { posthog.capture("checkout_started", { planId: plan.id }); setSelectedPlan(plan); }}
                   className={cn(
                     "mt-8 w-full rounded-full py-2.5 text-sm font-semibold transition-colors",
                     plan.popular
