@@ -30,6 +30,12 @@ export function Footer() {
           {/* Legal links */}
           <nav className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-xs text-gray-400">
             <a
+              href="/docs"
+              className="hover:text-indigo-600 transition-colors"
+            >
+              {t("footer.docs")}
+            </a>
+            <a
               href="/legal"
               className="hover:text-indigo-600 transition-colors"
             >
